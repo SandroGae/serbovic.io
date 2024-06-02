@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serbovic Webseite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #counter {
+            font-size: 2em;
+            margin: 20px;
+        }
+        #text {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div id="text">Beschriftung</div>
+    <input type="text" id="textfield" placeholder="Beschrifte mich" oninput="updateText()">
+    <div id="counter">0</div>
+    <button onclick="incrementCounter()">Erhöhe Counter</button>
+
+    <script>
+        let counter = 0;
+
+        function incrementCounter() {
+            counter++;
+            document.getElementById('counter').innerText = counter;
+        }
+
+        function updateText() {
+            const text = document.getElementById('textfield').value;
+            document.getElementById('text').innerText = text;
+        }
+    </script>
+</body>
+</html>
