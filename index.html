@@ -43,7 +43,7 @@
             padding: 20px;
             border: 2px solid #000;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.49);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             margin-top: 20px;
         }
         .answer {
@@ -72,25 +72,21 @@
     <script>
         let counter = localStorage.getItem('visitCount') || 0;
         counter = parseInt(counter);
-        let visitFlag = localStorage.getItem('visited') || 'false';
 
         function incrementCounter() {
-            if (visitFlag === 'false') {
-                counter++;
-                document.getElementById('counter').innerText = counter;
-                document.getElementById('serbCount').innerText = counter;
-                localStorage.setItem('visitCount', counter);
-                localStorage.setItem('visited', 'true');
-                document.getElementById('incrementButton').disabled = true;
-                document.getElementById('questionBox').style.display = 'flex';
-            }
+            counter++;
+            document.getElementById('counter').innerText = counter;
+            document.getElementById('serbCount').innerText = counter;
+            localStorage.setItem('visitCount', counter);
+            document.getElementById('incrementButton').disabled = true;
+            document.getElementById('questionBox').style.display = 'flex';
         }
 
         function checkAnswer(answer) {
             if (answer === 'Spanferkel') {
                 alert('Vielen Dank für deine Teilnahme');
             } else {
-                alert('Tut mir leid Sie sind kein richtiger Serbe...');
+                alert('Tut mir leid Sie sind kein Gewinner');
             }
             document.getElementById('questionBox').style.display = 'none';
         }
@@ -98,9 +94,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('counter').innerText = counter;
             document.getElementById('serbCount').innerText = counter;
-            if (visitFlag === 'true') {
-                document.getElementById('incrementButton').disabled = true;
-            }
+            document.getElementById('incrementButton').disabled = false;
         });
     </script>
 </body>
