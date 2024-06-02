@@ -13,36 +13,53 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-        }
-        #counter {
-            font-size: 2em;
-            margin: 20px;
+            background-image: linear-gradient(to bottom, #ff0000 33%, #ffffff 33%, #ffffff 66%, #0000ff 66%);
         }
         #text {
             margin-bottom: 20px;
-            font-size: 1.2em;
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+        }
+        #counter {
+            font-size: 3em;
+            margin: 20px;
+        }
+        button {
+            font-size: 1.5em;
+            padding: 10px 20px;
         }
     </style>
 </head>
 <body>
     <div id="text">Ich bin der <span id="serbCount"></span>'te Serbe der diese Website aufruft.</div>
     <div id="counter">0</div>
-    <button onclick="incrementCounter()">Erhöhe Counter</button>
+    <button onclick="incrementCounter()" disabled>Erhöhe Counter</button>
 
     <script>
         let counter = localStorage.getItem('visitCount') || 0;
         counter = parseInt(counter);
+        let visitFlag = localStorage.getItem('visited') || 'false';
 
         function incrementCounter() {
-            counter++;
-            document.getElementById('counter').innerText = counter;
-            document.getElementById('serbCount').innerText = counter;
-            localStorage.setItem('visitCount', counter);
+            if (visitFlag === 'false') {
+                counter++;
+                document.getElementById('counter').innerText = counter;
+                document.getElementById('serbCount').innerText = counter;
+                localStorage.setItem('visitCount', counter);
+                localStorage.setItem('visited', 'true');
+                document.querySelector('button').disabled = true;
+            }
         }
 
         document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('counter').innerText = counter;
             document.getElementById('serbCount').innerText = counter;
+            if (visitFlag === 'false') {
+                incrementCounter();
+            } else {
+                document.querySelector('button').disabled = true;
+            }
         });
     </script>
 </body>
