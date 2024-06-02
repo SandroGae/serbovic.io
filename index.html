@@ -13,7 +13,7 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background-image: linear-gradient(to bottom, #ff0000 33%, #ffffff 33%, #ffffff 66%, #0000ff 66%);
+            background-image: linear-gradient(to bottom, #ff0000 33.33%, #0000ff 33.33%, #0000ff 66.66%, #ffffff 66.66%);
         }
         #text {
             margin-bottom: 20px;
@@ -28,6 +28,7 @@
         button {
             font-size: 1.5em;
             padding: 10px 20px;
+            margin: 5px;
         }
     </style>
 </head>
@@ -35,6 +36,7 @@
     <div id="text">Ich bin der <span id="serbCount"></span>'te Serbe der diese Website aufruft.</div>
     <div id="counter">0</div>
     <button onclick="incrementCounter()" disabled>Erhöhe Counter</button>
+    <button onclick="resetCounter()">Counter zurücksetzen</button>
 
     <script>
         let counter = localStorage.getItem('visitCount') || 0;
@@ -50,6 +52,15 @@
                 localStorage.setItem('visited', 'true');
                 document.querySelector('button').disabled = true;
             }
+        }
+
+        function resetCounter() {
+            counter = 0;
+            localStorage.setItem('visitCount', counter);
+            localStorage.setItem('visited', 'false');
+            document.getElementById('counter').innerText = counter;
+            document.getElementById('serbCount').innerText = counter;
+            document.querySelector('button').disabled = false;
         }
 
         document.addEventListener("DOMContentLoaded", function() {
