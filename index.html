@@ -35,12 +35,39 @@
             padding: 10px 20px;
             margin: 5px;
         }
+        .question-box {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            background-color: #fff;
+            padding: 20px;
+            border: 2px solid #000;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+        .answer {
+            margin: 10px;
+            padding: 10px 20px;
+            border: 2px solid #000;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .answer:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
     <div id="text">Ich bin der <span id="serbCount"></span>'te Serbe der diese Website aufruft.</div>
     <div id="counter">0</div>
     <button id="incrementButton" onclick="incrementCounter()">Erhöhe Counter</button>
+    <div id="questionBox" class="question-box">
+        <p>Was ist dein Lieblingsessen?</p>
+        <div class="answer" onclick="checkAnswer('Gyros')">Gyros</div>
+        <div class="answer" onclick="checkAnswer('Schawarma')">Schawarma</div>
+        <div class="answer" onclick="checkAnswer('Spanferkel')">Spanferkel</div>
+    </div>
 
     <script>
         let counter = localStorage.getItem('visitCount') || 0;
@@ -55,7 +82,17 @@
                 localStorage.setItem('visitCount', counter);
                 localStorage.setItem('visited', 'true');
                 document.getElementById('incrementButton').disabled = true;
+                document.getElementById('questionBox').style.display = 'flex';
             }
+        }
+
+        function checkAnswer(answer) {
+            if (answer === 'Spanferkel') {
+                alert('Vielen Dank für deine Teilnahme');
+            } else {
+                alert('Tut mir leid Sie sind kein Gewinner');
+            }
+            document.getElementById('questionBox').style.display = 'none';
         }
 
         document.addEventListener("DOMContentLoaded", function() {
