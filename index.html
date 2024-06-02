@@ -25,23 +25,25 @@
     </style>
 </head>
 <body>
-    <div id="text">Beschriftung</div>
-    <input type="text" id="textfield" placeholder="Beschrifte mich" oninput="updateText()">
+    <div id="text">Ich bin der <span id="serbCount"></span>'te Serbe der diese Website aufruft.</div>
     <div id="counter">0</div>
-    <button onclick="incrementCounter()">Erhöhe Counter</button>
+    <button onclick="incrementCounter()">ErhÃ¶he Counter</button>
 
     <script>
-        let counter = 0;
+        let counter = localStorage.getItem('visitCount') || 0;
+        counter = parseInt(counter);
 
         function incrementCounter() {
             counter++;
             document.getElementById('counter').innerText = counter;
+            document.getElementById('serbCount').innerText = counter;
+            localStorage.setItem('visitCount', counter);
         }
 
-        function updateText() {
-            const text = document.getElementById('textfield').value;
-            document.getElementById('text').innerText = text;
-        }
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById('counter').innerText = counter;
+            document.getElementById('serbCount').innerText = counter;
+        });
     </script>
 </body>
 </html>
