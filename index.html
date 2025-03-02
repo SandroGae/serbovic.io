@@ -21,27 +21,69 @@
           transform: translate(-50%, -50%);
           color: #FFD700;
           font-family: Arial, sans-serif;
-          font-size: 36px;
+          font-size: 48px;
           text-align: center;
           background: rgba(0, 0, 0, 0.5);
-          padding: 20px;
+          padding: 40px;
           border-radius: 10px;
           display: none;
+      }
+      #gameOver {
+          display: none;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0,0,0,0.7);
+          color: white;
+          padding: 20px;
+          border-radius: 10px;
+          text-align: center;
+          font-family: Arial, sans-serif;
+      }
+      #restartBtn {
+          font-size: 20px;
+          padding: 10px 20px;
+          margin-top: 20px;
       }
   </style>
 </head>
 <body>
   <div id="punkte">Punkte: 0</div>
   <div id="leben">Leben: 3</div>
-  <div id="message">Einladung zum All You Can Eat Fondue Shinuas!</div>
+  <div id="message">
+    <h1>Herzlichen Glückwunsch, Joel, zum 28. Geburtstag!</h1>
+    <p>Einladung zum All You Can Eat Fondue Shinuas!</p>
+  </div>
+  <div id="gameOver">
+      <h1>Game Over!</h1>
+      <button id="restartBtn">Neu starten</button>
+  </div>
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
   <script>
+      // Globale Variable, um den Spielstatus zu steuern
+      let gameActive = true;
+
       // Szene, Kamera und Renderer
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       const renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
+
+      // Textur für den Boden (Wiese)
+      const textureLoader = new THREE.TextureLoader();
+      const grassTexture = textureLoader.load('https://threejsfundamentals.org/threejs/resources/images/grasslight-big.jpg');
+      grassTexture.wrapS = THREE.RepeatWrapping;
+      grassTexture.wrapT = THREE.RepeatWrapping;
+      grassTexture.repeat.set(10, 10);
+
+      // Boden
+      const groundGeometry = new THREE.PlaneGeometry(100, 100);
+      const groundMaterial = new THREE.MeshPhongMaterial({ map: grassTexture });
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      scene.add(ground);
 
       // Beleuchtung
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -50,25 +92,37 @@
       directionalLight.position.set(0, 10, 10);
       scene.add(directionalLight);
 
-      // Hintergrund
-      scene.background = new THREE.Color(0x87CEEB); // Hellblau
+      // Hintergrund (Himmel)
+      scene.background = new THREE.Color(0x87CEEB);
 
-      // Boden (wird im Animate-Loop aktualisiert, damit er immer unter dem Spieler bleibt)
-      const groundGeometry = new THREE.PlaneGeometry(100, 100);
-      const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
-      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-      ground.rotation.x = -Math.PI / 2;
-      scene.add(ground);
+      // Wolken erstellen und zum Himmel hinzufügen
+      function createCloud(x, y, z) {
+          const cloud = new THREE.Group();
+          const cloudGeo = new THREE.SphereGeometry(1, 16, 16);
+          const cloudMat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+          const part1 = new THREE.Mesh(cloudGeo, cloudMat);
+          const part2 = new THREE.Mesh(cloudGeo, cloudMat);
+          const part3 = new THREE.Mesh(cloudGeo, cloudMat);
+          part1.position.set(0, 0, 0);
+          part2.position.set(1, 0.2, 0);
+          part3.position.set(-1, 0.2, 0);
+          cloud.add(part1);
+          cloud.add(part2);
+          cloud.add(part3);
+          cloud.position.set(x, y, z);
+          return cloud;
+      }
+      scene.add(createCloud(-10, 15, -20));
+      scene.add(createCloud(5, 20, -30));
+      scene.add(createCloud(12, 18, -25));
 
-      // Spieler: Erstelle eine Gruppe mit einem Kopf (Sphere) und einem Körper (Box)
+      // Spieler: Erstelle eine Gruppe mit Kopf (Sphere) und Körper (Box)
       const player = new THREE.Group();
-      // Kopf
       const headGeometry = new THREE.SphereGeometry(0.5, 32, 32);
       const headMaterial = new THREE.MeshBasicMaterial({ color: 0xffd1a4 });
       const head = new THREE.Mesh(headGeometry, headMaterial);
       head.position.y = 1.5;
       player.add(head);
-      // Körper
       const bodyGeometry = new THREE.BoxGeometry(1, 1, 0.5);
       const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
       const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
@@ -92,8 +146,8 @@
       });
 
       // Hindernisse und Sammelobjekte
-      const obstacles = [];
-      const collectibles = [];
+      let obstacles = [];
+      let collectibles = [];
       const obstacleSpeed = 0.2;
       const collectibleSpeed = 0.2;
 
@@ -101,8 +155,7 @@
           const geometry = new THREE.BoxGeometry(1, 1, 1);
           const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
           const obstacle = new THREE.Mesh(geometry, material);
-          // Spawne relativ zur Spielerposition, wenn vorhanden
-          const spawnZ = player ? player.position.z - 50 : -50;
+          const spawnZ = player.position.z - 50;
           obstacle.position.set(Math.random() * 10 - 5, 0.5, spawnZ);
           scene.add(obstacle);
           obstacles.push(obstacle);
@@ -112,7 +165,7 @@
           const geometry = new THREE.SphereGeometry(0.5, 32, 32);
           const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
           const collectible = new THREE.Mesh(geometry, material);
-          const spawnZ = player ? player.position.z - 50 : -50;
+          const spawnZ = player.position.z - 50;
           collectible.position.set(Math.random() * 10 - 5, 0.5, spawnZ);
           scene.add(collectible);
           collectibles.push(collectible);
@@ -124,17 +177,45 @@
       const punkteElement = document.getElementById('punkte');
       const lebenElement = document.getElementById('leben');
       const messageElement = document.getElementById('message');
+      const gameOverElement = document.getElementById('gameOver');
+      const restartBtn = document.getElementById('restartBtn');
 
-      // Kamera-Position initialisieren
+      // Kamera initialisieren
       camera.position.set(0, 5, 10);
       camera.lookAt(0, 0, 0);
+
+      // Spiel zurücksetzen
+      function resetGame() {
+          punkte = 0;
+          leben = 3;
+          punkteElement.textContent = `Punkte: ${punkte}`;
+          lebenElement.textContent = `Leben: ${leben}`;
+          player.position.set(0, 0, 0);
+          camera.position.set(0, 5, 10);
+          obstacles.forEach(obs => scene.remove(obs));
+          collectibles.forEach(col => scene.remove(col));
+          obstacles = [];
+          collectibles = [];
+          gameOverElement.style.display = 'none';
+          messageElement.style.display = 'none';
+          gameActive = true;
+      }
+
+      restartBtn.addEventListener('click', () => {
+          resetGame();
+      });
 
       // Spiel-Loop
       function animate() {
           requestAnimationFrame(animate);
 
+          if (!gameActive) {
+              renderer.render(scene, camera);
+              return;
+          }
+
           // Spieler bewegen
-          player.position.z -= 0.1; // Vorwärtsbewegung
+          player.position.z -= 0.1;
           if (leftPressed && player.position.x > -5) player.position.x -= playerSpeed;
           if (rightPressed && player.position.x < 5) player.position.x += playerSpeed;
 
@@ -150,7 +231,7 @@
           if (Math.random() < 0.02) spawnObstacle();
           if (Math.random() < 0.02) spawnCollectible();
 
-          // Hindernisse bewegen und Kollision prüfen
+          // Hindernisse bewegen und Kollision pruefen
           obstacles.forEach((obs, index) => {
               obs.position.z += obstacleSpeed;
               if (obs.position.z > player.position.z + 10) {
@@ -164,16 +245,13 @@
                   scene.remove(obs);
                   obstacles.splice(index, 1);
                   if (leben <= 0) {
-                      alert('Spiel vorbei! Punkte: ' + punkte);
-                      leben = 3;
-                      punkte = 0;
-                      punkteElement.textContent = `Punkte: ${punkte}`;
-                      messageElement.style.display = 'none';
+                      gameActive = false;
+                      gameOverElement.style.display = 'block';
                   }
               }
           });
 
-          // Sammelobjekte bewegen und Kollision prüfen
+          // Sammelobjekte bewegen und Kollision pruefen
           collectibles.forEach((col, index) => {
               col.position.z += collectibleSpeed;
               if (col.position.z > player.position.z + 10) {
@@ -189,11 +267,10 @@
               }
           });
 
-          // Ab einem Score von 30: Anzeige der Einladung
+          // Ab einem Score von 30: Einladung anzeigen, Spiel pausieren und somit stoppen
           if (punkte >= 30) {
+              gameActive = false;
               messageElement.style.display = 'block';
-          } else {
-              messageElement.style.display = 'none';
           }
 
           renderer.render(scene, camera);
