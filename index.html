@@ -65,16 +65,16 @@
   <script>
       // Parameter, direkt im Code anpassbar:
       const SPEED_MULTIPLIER = 1.0;
-      const MAX_OBSTACLES = 10;
+      const MAX_OBSTACLES = 50;
       const MAX_COLLECTIBLES = 10;
-      const MAX_TREES = 15;    // Ändere hier die Anzahl der Bäume (z. B. 20 für mehr)
-      const MAX_STONES = 15;   // Ändere hier die Anzahl der Steine (z. B. 20 für mehr)
+      const MAX_TREES = 100;    // Ändere hier die Anzahl der Bäume (z. B. 20 für mehr)
+      const MAX_STONES = 40;   // Ändere hier die Anzahl der Steine (z. B. 20 für mehr)
 
       // Basisgeschwindigkeiten
-      const basePlayerSpeed = 0.1;
-      const baseObstacleSpeed = 0.2;
-      const baseCollectibleSpeed = 0.2;
-      const baseEnvSpeed = 0.15;  // Geschwindigkeit für Bäume und Steine
+      const basePlayerSpeed = 0.2;
+      const baseObstacleSpeed = 0.4;
+      const baseCollectibleSpeed = 0.4;
+      const baseEnvSpeed = 0.3;  // Geschwindigkeit für Bäume und Steine
       const cloudSpeed = 0.01;    // Wolkengeschwindigkeit
 
       let gameActive = true;
