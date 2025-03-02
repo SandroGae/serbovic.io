@@ -1,77 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Joel Crivelli - Chemiespiel</title>
-    <style>
-        canvas { border: 1px solid black; }
-        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f0f0; }
-    </style>
+    <title>Joel Crivelli Spiel</title>
+    <style>canvas { border: 1px solid black; }</style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <script>
-        const canvas = document.getElementById('gameCanvas');
+        const canvas = document.querySelector('#gameCanvas');
         const ctx = canvas.getContext('2d');
+        canvas.width = 1000;
+        canvas.height = 800;
 
-        let player = { x: 50, y: 300, width: 30, height: 30, speed: 5, dy: 0, jumping: false };
-        let chemicals = [];
+        const player = { x: 50, y: 50, width: 30, height: 30, speed: 5, dx: 0, dy: 0, jumping: false };
         let obstacles = [];
         let score = 0;
 
-        function drawPlayer() {
-            ctx.fillStyle = 'blue';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-        }
-
-        function spawnItem(array, color, y) {
-            array.push({ x: 800, y: y, width: 20, height: 20, color: color });
+        function spawnObstacle() {
+            const obs = {
+                x: canvas.width,
+                y: canvas.height - 60,
+                width: 30,
+                height: 30,
+                color: 'red'
+            };
+            obstacles.push(obs);
         }
 
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPlayer();
-
-            if (Math.random() < 0.02) spawnItem(chemicals, 'green', 300);
-            if (Math.random() < 0.02) spawnItem(obstacles, 'red', 300);
-
-            chemicals.forEach((item, index) => {
-                ctx.fillStyle = item.color;
-                ctx.fillRect(item.x, item.y, item.width, item.height);
-                item.x -= 3;
-                if (collision(player, item)) {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            if (Math.random() < 0.02) spawnObstacle();
+            obstacles.forEach((obs, index) => {
+                ctx.fillStyle = obs.color;
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                obs.x -= 5;
+                if (obs.x + obs.width < 0) {
+                    obstacles.splice(index, 1);
                     score += 1;
-                    chemicals.splice(index, 1);
                 }
             });
-
-            obstacles.forEach((item, index) => {
-                ctx.fillStyle = item.color;
-                ctx.fillRect(item.x, item.y, item.width, item.height);
-                item.x -= 3;
-                if (collision(player, item)) alert('Game Over! Score: ' + score);
-            });
-
             ctx.fillStyle = 'black';
-            ctx.font = '20px Arial';
-            ctx.fillText('Punkte: ' + score, 10, 30);
-
-            player.y += player.dy;
-            if (player.y < 300) player.dy += 0.5;
-            else { player.y = 300; player.dy = 0; player.jumping = false; }
-
+            ctx.fillText('Score: ' + score, 10, 20);
             requestAnimationFrame(update);
         }
-
-        function collision(a, b) {
-            return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && !player.jumping) {
-                player.dy = -10;
-                player.jumping = true;
-            }
-        });
 
         update();
     </script>
