@@ -1,245 +1,140 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Chemiker 3D Spiel</title>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    #overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      background: rgba(0,0,0,0.5);
-      color: white;
-      font-family: Arial, sans-serif;
-      font-size: 24px;
-    }
-    #restartBtn {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 20px;
-      cursor: pointer;
-    }
-    #instructions {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      color: white;
-      font-family: Arial, sans-serif;
-      font-size: 16px;
-      background: rgba(0,0,0,0.5);
-      padding: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemiker-Abenteuer</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        canvas { border: 1px solid black; }
+    </style>
 </head>
 <body>
-  <div id="overlay">
-    <div>Spiel vorbei! Punkte: <span id="finalScore"></span></div>
-    <button id="restartBtn">Neustarten</button>
-  </div>
-  <div id="instructions">
-    Klicke ins Fenster und benutze die Pfeiltasten (Links/Rechts) zum Bewegen.
-  </div>
-  <!-- Three.js via CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script>
-    // Szene, Kamera und Renderer initialisieren
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0xa0a0a0, 50, 300);
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 3, 10);
-    
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    // Damit das Canvas Tastaturfokus erhalten kann
-    renderer.domElement.setAttribute("tabindex", "0");
-    document.body.appendChild(renderer.domElement);
-    // Beim Klick in das Canvas wird Fokus gesetzt
-    renderer.domElement.addEventListener('click', () => {
-      renderer.domElement.focus();
-    });
-    
-    // Licht hinzufügen
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(0, 10, 5);
-    scene.add(directionalLight);
-    
-    // Boden (einfache graue Ebene)
-    const groundGeometry = new THREE.PlaneGeometry(20, 500);
-    const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x444444 });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.z = -250;
-    scene.add(ground);
-    
-    // Chemiker-Figur (Gruppe aus Körper und Kopf)
-    const chemist = new THREE.Group();
-    const bodyGeometry = new THREE.BoxGeometry(1, 2, 0.5);
-    const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 1;
-    chemist.add(body);
-    const headGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-    const headMaterial = new THREE.MeshPhongMaterial({ color: 0xffcc99 });
-    const head = new THREE.Mesh(headGeometry, headMaterial);
-    head.position.y = 2.5;
-    chemist.add(head);
-    chemist.position.set(0, 0, 0);
-    scene.add(chemist);
-    
-    // Spielvariablen
-    let score = 0;
-    let lives = 3;
-    let obstacles = [];
-    let collectibles = [];
-    const gameSpeed = 0.2;
-    // Erhöhte Spawnraten, damit du Objekte leichter siehst
-    const obstacleFrequency = 0.08;
-    const collectibleFrequency = 0.08;
-    
-    // Tastatursteuerung
-    let keys = { left: false, right: false };
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'ArrowLeft') keys.left = true;
-      if (e.code === 'ArrowRight') keys.right = true;
-    });
-    window.addEventListener('keyup', (e) => {
-      if (e.code === 'ArrowLeft') keys.left = false;
-      if (e.code === 'ArrowRight') keys.right = false;
-    });
-    
-    // Overlay (Game Over)
-    const overlay = document.getElementById('overlay');
-    const finalScore = document.getElementById('finalScore');
-    const restartBtn = document.getElementById('restartBtn');
-    restartBtn.addEventListener('click', restartGame);
-    
-    function restartGame() {
-      score = 0;
-      lives = 3;
-      obstacles.forEach(obj => scene.remove(obj));
-      collectibles.forEach(obj => scene.remove(obj));
-      obstacles = [];
-      collectibles = [];
-      overlay.style.display = 'none';
-      chemist.position.set(0, 0, 0);
-      ground.position.z = -250;
-    }
-    
-    // Hindernisse (rote Boxen – Physikgegenstaende)
-    function spawnObstacle() {
-      const geometry = new THREE.BoxGeometry(2, 2, 2); // Größer, besser sichtbar
-      const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-      const obstacle = new THREE.Mesh(geometry, material);
-      obstacle.position.x = (Math.random() - 0.5) * 10;
-      obstacle.position.y = 1;
-      // Spawnt weiter vorne relativ zum Chemiker
-      obstacle.position.z = chemist.position.z - 60;
-      scene.add(obstacle);
-      obstacles.push(obstacle);
-    }
-    
-    // Sammelobjekte (grüne Kugeln – Chemiegegenstaende)
-    function spawnCollectible() {
-      const geometry = new THREE.SphereGeometry(1, 16, 16); // Größer
-      const material = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
-      const collectible = new THREE.Mesh(geometry, material);
-      collectible.position.x = (Math.random() - 0.5) * 10;
-      collectible.position.y = 1;
-      collectible.position.z = chemist.position.z - 60;
-      scene.add(collectible);
-      collectibles.push(collectible);
-    }
-    
-    // Einfache Kollisionserkennung über Bounding Boxes
-    function checkCollision(a, b) {
-      a.geometry.computeBoundingBox();
-      b.geometry.computeBoundingBox();
-      a.updateMatrixWorld();
-      b.updateMatrixWorld();
-      const boxA = a.geometry.boundingBox.clone().applyMatrix4(a.matrixWorld);
-      const boxB = b.geometry.boundingBox.clone().applyMatrix4(b.matrixWorld);
-      return boxA.intersectsBox(boxB);
-    }
-    
-    function animate() {
-      requestAnimationFrame(animate);
-      
-      // Seitliche Bewegung mit Pfeiltasten
-      if (keys.left && chemist.position.x > -5) {
-        chemist.position.x -= 0.3;
-      }
-      if (keys.right && chemist.position.x < 5) {
-        chemist.position.x += 0.3;
-      }
-      
-      // Vorwärtsbewegung
-      chemist.position.z -= gameSpeed;
-      
-      // Kamera folgt dem Chemiker
-      camera.position.z = chemist.position.z + 10;
-      camera.position.x = chemist.position.x;
-      camera.lookAt(chemist.position.x, chemist.position.y, chemist.position.z);
-      
-      // Objekte spawnen
-      if (Math.random() < obstacleFrequency) spawnObstacle();
-      if (Math.random() < collectibleFrequency) spawnCollectible();
-      
-      // Hindernisse aktualisieren
-      obstacles.forEach((obs, index) => {
-        obs.position.z += gameSpeed;
-        if (obs.position.z > chemist.position.z + 5) {
-          scene.remove(obs);
-          obstacles.splice(index, 1);
-        } else if (checkCollision(chemist, obs)) {
-          lives--;
-          scene.remove(obs);
-          obstacles.splice(index, 1);
-          if (lives <= 0) gameOver();
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <script>
+        // Canvas und Kontext initialisieren
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Spieler (Chemiker)
+        let player = {
+            x: 185,         // Startposition horizontal
+            y: 550,         // Startposition vertikal (nahe Boden)
+            width: 30,      // Breite des Spielers
+            height: 30,     // Höhe des Spielers
+            speed: 5,       // Bewegungsgeschwindigkeit
+            lives: 3        // Anzahl der Leben
+        };
+
+        // Arrays für Hindernisse und Sammelobjekte
+        let obstacles = [];     // Physikgegenstände
+        let collectibles = [];  // Chemiegegenstände
+        let score = 0;          // Punktestand
+
+        // Tastatureingaben verwalten
+        let keys = {};
+        window.addEventListener('keydown', (e) => keys[e.key] = true);
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // Spielschleife
+        function gameLoop() {
+            if (player.lives > 0) {
+                update();       // Spielzustand aktualisieren
+                draw();         // Spiel rendern
+            }
+            requestAnimationFrame(gameLoop); // Schleife fortsetzen
         }
-      });
-      
-      // Sammelobjekte aktualisieren
-      collectibles.forEach((col, index) => {
-        col.position.z += gameSpeed;
-        if (col.position.z > chemist.position.z + 5) {
-          scene.remove(col);
-          collectibles.splice(index, 1);
-        } else if (checkCollision(chemist, col)) {
-          score++;
-          scene.remove(col);
-          collectibles.splice(index, 1);
+
+        // Spielzustand aktualisieren
+        function update() {
+            // Spieler bewegen
+            if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
+            if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += player.speed;
+
+            // Hindernisse und Sammelobjekte zufällig erzeugen
+            if (Math.random() < 0.02) spawnObstacle();
+            if (Math.random() < 0.02) spawnCollectible();
+
+            // Hindernisse bewegen und Kollision prüfen
+            obstacles.forEach((obs, index) => {
+                obs.y += 3; // Geschwindigkeit des Falls
+                if (obs.y > canvas.height) obstacles.splice(index, 1); // Entferne, wenn unten
+                if (collision(player, obs)) {
+                    player.lives -= 1; // Leben verlieren
+                    obstacles.splice(index, 1); // Hindernis entfernen
+                    if (player.lives <= 0) {
+                        alert('Spiel vorbei! Punkte: ' + score); // Spielende
+                    }
+                }
+            });
+
+            // Sammelobjekte bewegen und Kollision prüfen
+            collectibles.forEach((col, index) => {
+                col.y += 3; // Geschwindigkeit des Falls
+                if (col.y > canvas.height) collectibles.splice(index, 1); // Entferne, wenn unten
+                if (collision(player, col)) {
+                    score += 1; // Punkt erhöhen
+                    collectibles.splice(index, 1); // Sammelobjekt entfernen
+                }
+            });
         }
-      });
-      
-      // Boden-Endlos-Effekt
-      ground.position.z += gameSpeed;
-      if (ground.position.z > 0) {
-        ground.position.z = -250;
-      }
-      
-      renderer.render(scene, camera);
-    }
-    
-    function gameOver() {
-      overlay.style.display = 'flex';
-      finalScore.textContent = score;
-    }
-    
-    animate();
-    
-    // Fenstergröße anpassen
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+
+        // Spiel rendern
+        function draw() {
+            // Canvas leeren
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Spieler zeichnen (Chemiker)
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Hindernisse zeichnen (Physikgegenstände)
+            ctx.fillStyle = 'red';
+            obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.width, obs.height));
+
+            // Sammelobjekte zeichnen (Chemiegegenstände)
+            ctx.fillStyle = 'green';
+            collectibles.forEach(col => ctx.fillRect(col.x, col.y, col.width, col.height));
+
+            // Punkte und Leben anzeigen
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText('Punkte: ' + score, 10, 30);
+            ctx.fillText('Leben: ' + player.lives, 10, 60);
+        }
+
+        // Hindernis erzeugen (Physikgegenstand)
+        function spawnObstacle() {
+            let obs = {
+                x: Math.random() * (canvas.width - 30), // Zufällige x-Position
+                y: 0,                                   // Start oben
+                width: 30,                              // Breite
+                height: 30                              // Höhe
+            };
+            obstacles.push(obs);
+        }
+
+        // Sammelobjekt erzeugen (Chemiegegenstand)
+        function spawnCollectible() {
+            let col = {
+                x: Math.random() * (canvas.width - 30), // Zufällige x-Position
+                y: 0,                                   // Start oben
+                width: 30,                              // Breite
+                height: 30                              // Höhe
+            };
+            collectibles.push(col);
+        }
+
+        // Kollisionserkennung
+        function collision(a, b) {
+            return a.x < b.x + b.width && 
+                   a.x + a.width > b.x && 
+                   a.y < b.y + b.height && 
+                   a.y + a.height > b.y;
+        }
+
+        // Spiel starten
+        gameLoop();
+    </script>
 </body>
 </html>
