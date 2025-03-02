@@ -1,52 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>Joel Crivelli Spiel</title>
-    <style>canvas { border: 1px solid black; }</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greifeld JS 20-Momentaufnahme</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: white; font-family: Arial; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas" style="display: block;"></canvas>
+    <div id="score">Punkte: 0</div>
     <script>
-        const canvas = document.querySelector('#gameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 1000;
-        canvas.height = 800;
-
-        const player = { x: 50, y: 50, width: 30, height: 30, speed: 5, dx: 0, dy: 0, jumping: false };
-        let obstacles = [];
         let score = 0;
-
-        function spawnObstacle() {
-            const obs = {
-                x: canvas.width,
-                y: canvas.height - 60,
-                width: 30,
-                height: 30,
-                color: 'red'
-            };
-            obstacles.push(obs);
+        const scene = new THREE.Scene();
+        const kamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gameCanvas"), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000);
+        kamera.position.z = 5;
+        kamera.position.y = 2;
+        kamera.lookAt(0, 0, 0);
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, kamera);
         }
-
-        function update() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'black';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-            if (Math.random() < 0.02) spawnObstacle();
-            obstacles.forEach((obs, index) => {
-                ctx.fillStyle = obs.color;
-                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                obs.x -= 5;
-                if (obs.x + obs.width < 0) {
-                    obstacles.splice(index, 1);
-                    score += 1;
-                }
-            });
-            ctx.fillStyle = 'black';
-            ctx.fillText('Score: ' + score, 10, 20);
-            requestAnimationFrame(update);
-        }
-
-        update();
+        animate();
     </script>
 </body>
 </html>
