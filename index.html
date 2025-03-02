@@ -1,126 +1,79 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serbovic Webseite</title>
+    <title>Joel Crivelli - Chemiespiel</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background-image: linear-gradient(to bottom, #b22222 33.33%, #000080 33.33%, #000080 66.66%, #ffffff 66.66%);
-        }
-        #text {
-            margin-bottom: 20px;
-            font-size: 2.5em;
-            font-weight: bold;
-            text-align: center;
-        }
-        #counter {
-            font-size: 3.5em;
-            margin: 20px;
-            padding: 20px;
-            border: 5px solid #000;
-            border-radius: 10px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        }
-        button {
-            font-size: 1.5em;
-            padding: 10px 20px;
-            margin: 5px;
-        }
-        .question-box {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            background-color: #fff;
-            padding: 20px;
-            border: 2px solid #000;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            margin-top: 20px;
-        }
-        .question-box p {
-            font-size: 2em;
-            font-weight: bold;
-        }
-        .answer {
-            margin: 10px;
-            padding: 15px 30px;
-            border: 2px solid #000;
-            border-radius: 5px;
-            font-size: 1.5em;
-            cursor: pointer;
-        }
-        .answer:hover {
-            background-color: #f0f0f0;
-        }
-        .result-message {
-            font-size: 2em;
-            font-weight: bold;
-            text-align: center;
-            padding: 20px;
-            border: 2px solid #000;
-            border-radius: 10px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            margin-top: 20px;
-        }
+        canvas { border: 1px solid black; }
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f0f0; }
     </style>
 </head>
 <body>
-    <div id="text">Du bist der <span id="serbCount"></span>'te potentielle Serbe der diese Website aufruft.</div>
-    <div id="counter">0</div>
-    <button id="incrementButton" onclick="showQuestion()">Erhöhe Counter</button>
-    <div id="questionBox" class="question-box">
-        <p>Was ist dein Lieblingsessen?</p>
-        <div class="answer" onclick="checkAnswer('Gyros')">Gyros</div>
-        <div class="answer" onclick="checkAnswer('Schawarma')">Schawarma</div>
-        <div class="answer" onclick="checkAnswer('Spanferkel')">Spanferkel</div>
-    </div>
-    <div id="resultMessage" class="result-message" style="display: none;"></div>
-
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
     <script>
-        let counter = localStorage.getItem('visitCount') || 0;
-        counter = parseInt(counter);
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-        function showQuestion() {
-            document.getElementById('incrementButton').disabled = true;
-            document.getElementById('questionBox').style.display = 'flex';
+        let player = { x: 50, y: 300, width: 30, height: 30, speed: 5, dy: 0, jumping: false };
+        let chemicals = [];
+        let obstacles = [];
+        let score = 0;
+
+        function drawPlayer() {
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
         }
 
-        function checkAnswer(answer) {
-            let message = '';
-            if (answer === 'Spanferkel') {
-                counter++;
-                localStorage.setItem('visitCount', counter);
-                document.getElementById('counter').innerText = counter;
-                document.getElementById('serbCount').innerText = counter;
-                message = 'Vielen Dank für deine Teilnahme';
-            } else {
-                message = 'Tut mir leid, Sie sind leider kein echter Serbe... Counter wird nicht erhöht';
+        function spawnItem(array, color, y) {
+            array.push({ x: 800, y: y, width: 20, height: 20, color: color });
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+
+            if (Math.random() < 0.02) spawnItem(chemicals, 'green', 300);
+            if (Math.random() < 0.02) spawnItem(obstacles, 'red', 300);
+
+            chemicals.forEach((item, index) => {
+                ctx.fillStyle = item.color;
+                ctx.fillRect(item.x, item.y, item.width, item.height);
+                item.x -= 3;
+                if (collision(player, item)) {
+                    score += 1;
+                    chemicals.splice(index, 1);
+                }
+            });
+
+            obstacles.forEach((item, index) => {
+                ctx.fillStyle = item.color;
+                ctx.fillRect(item.x, item.y, item.width, item.height);
+                item.x -= 3;
+                if (collision(player, item)) alert('Game Over! Score: ' + score);
+            });
+
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText('Punkte: ' + score, 10, 30);
+
+            player.y += player.dy;
+            if (player.y < 300) player.dy += 0.5;
+            else { player.y = 300; player.dy = 0; player.jumping = false; }
+
+            requestAnimationFrame(update);
+        }
+
+        function collision(a, b) {
+            return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !player.jumping) {
+                player.dy = -10;
+                player.jumping = true;
             }
-            document.getElementById('questionBox').style.display = 'none';
-            showResultMessage(message);
-        }
-
-        function showResultMessage(message) {
-            const resultMessageDiv = document.getElementById('resultMessage');
-            resultMessageDiv.innerText = message;
-            resultMessageDiv.style.display = 'block';
-        }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            document.getElementById('counter').innerText = counter;
-            document.getElementById('serbCount').innerText = counter;
-            document.getElementById('incrementButton').disabled = false;
         });
+
+        update();
     </script>
 </body>
 </html>
