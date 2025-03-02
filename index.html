@@ -2,16 +2,13 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chemiker-Abenteuer 3D – Minimal</title>
+  <title>3D Chemiker Test</title>
   <style>
     body { margin: 0; overflow: hidden; }
     #overlay {
-      position: absolute; top: 0; left: 0;
-      width: 100%; height: 100%;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       display: none; justify-content: center; align-items: center; flex-direction: column;
-      background: rgba(0,0,0,0.5); color: white;
-      font-family: Arial, sans-serif; font-size: 24px;
+      background: rgba(0,0,0,0.5); color: white; font-family: Arial, sans-serif; font-size: 24px;
     }
     #restartBtn {
       margin-top: 20px; padding: 10px 20px; font-size: 20px; cursor: pointer;
@@ -24,13 +21,11 @@
     <button id="restartBtn">Neustarten</button>
   </div>
 
-  <!-- Three.js per CDN einbinden -->
+  <!-- Three.js über CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    // --- Szene, Kamera, Renderer ---
+    // Szene, Kamera, Renderer
     const scene = new THREE.Scene();
-
-    // Nebel für etwas Atmosphäre
     scene.fog = new THREE.Fog(0xa0a0a0, 50, 300);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -40,41 +35,29 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // --- Beleuchtung ---
+    // Licht
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
-
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(0, 10, 5);
     scene.add(directionalLight);
 
-    // --- Hintergrund-Sphere (einfach nur Farbe) ---
-    // Wir färben sie grau, damit man etwas sieht
-    const envGeometry = new THREE.SphereGeometry(500, 32, 32);
-    const envMaterial = new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.BackSide });
-    const environment = new THREE.Mesh(envGeometry, envMaterial);
-    scene.add(environment);
-
-    // --- Boden-Ebene ---
-    // Einfach grau, 20 breit, 500 lang
+    // Boden
     const groundGeometry = new THREE.PlaneGeometry(20, 500);
     const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x444444 });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.z = -250; // Startposition
+    ground.position.z = -250;
     scene.add(ground);
 
-    // --- SPIELER (Chemiker) ---
+    // Chemiker-Figur
     const chemist = new THREE.Group();
-
-    // Körper (blau)
     const bodyGeometry = new THREE.BoxGeometry(1, 2, 0.5);
     const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     body.position.y = 1;
     chemist.add(body);
 
-    // Kopf (hell)
     const headGeometry = new THREE.SphereGeometry(0.5, 16, 16);
     const headMaterial = new THREE.MeshPhongMaterial({ color: 0xffcc99 });
     const head = new THREE.Mesh(headGeometry, headMaterial);
@@ -84,20 +67,14 @@
     chemist.position.set(0, 0, 0);
     scene.add(chemist);
 
-    // --- Spielvariablen ---
-    let score = 0;
-    let lives = 3;
-    let obstacles = [];
-    let collectibles = [];
-
-    // Geschwindigkeit des "Laufs" (z-Richtung)
+    // Variablen
+    let score = 0, lives = 3;
+    let obstacles = [], collectibles = [];
     const gameSpeed = 0.2;
-
-    // Häufigere Spawns, damit man direkt was sieht
     const obstacleFrequency = 0.05;
     const collectibleFrequency = 0.05;
 
-    // --- Tastensteuerung ---
+    // Tastatur
     let keys = { left: false, right: false };
     window.addEventListener('keydown', (e) => {
       if (e.code === 'ArrowLeft') keys.left = true;
@@ -108,7 +85,7 @@
       if (e.code === 'ArrowRight') keys.right = false;
     });
 
-    // --- Overlay (Game Over) ---
+    // Overlay
     const overlay = document.getElementById('overlay');
     const finalScore = document.getElementById('finalScore');
     const restartBtn = document.getElementById('restartBtn');
@@ -117,8 +94,8 @@
     function restartGame() {
       score = 0;
       lives = 3;
-      obstacles.forEach(obj => scene.remove(obj));
-      collectibles.forEach(obj => scene.remove(obj));
+      obstacles.forEach(o => scene.remove(o));
+      collectibles.forEach(c => scene.remove(c));
       obstacles = [];
       collectibles = [];
       overlay.style.display = 'none';
@@ -127,99 +104,85 @@
       ground.position.z = -250;
     }
 
-    // --- Hindernisse (rot) ---
     function spawnObstacle() {
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
-      const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-      const obstacle = new THREE.Mesh(geometry, material);
-      obstacle.position.x = (Math.random() - 0.5) * 10; // Zwischen -5 und +5
-      obstacle.position.y = 0.5;
-      obstacle.position.z = chemist.position.z - 50;
-      scene.add(obstacle);
-      obstacles.push(obstacle);
+      const geom = new THREE.BoxGeometry(1, 1, 1);
+      const mat = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+      const obs = new THREE.Mesh(geom, mat);
+      obs.position.x = (Math.random() - 0.5) * 10;
+      obs.position.y = 0.5;
+      obs.position.z = chemist.position.z - 50;
+      scene.add(obs);
+      obstacles.push(obs);
     }
 
-    // --- Sammelobjekte (grüne Kugeln) ---
     function spawnCollectible() {
-      const geometry = new THREE.SphereGeometry(0.5, 16, 16);
-      const material = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
-      const collectible = new THREE.Mesh(geometry, material);
-      collectible.position.x = (Math.random() - 0.5) * 10;
-      collectible.position.y = 0.5;
-      collectible.position.z = chemist.position.z - 50;
-      scene.add(collectible);
-      collectibles.push(collectible);
+      const geom = new THREE.SphereGeometry(0.5, 16, 16);
+      const mat = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+      const col = new THREE.Mesh(geom, mat);
+      col.position.x = (Math.random() - 0.5) * 10;
+      col.position.y = 0.5;
+      col.position.z = chemist.position.z - 50;
+      scene.add(col);
+      collectibles.push(col);
     }
 
-    // --- Kollision (BoundingBox) ---
-    function checkCollision(obj1, obj2) {
-      obj1.geometry.computeBoundingBox();
-      obj2.geometry.computeBoundingBox();
-      obj1.updateMatrixWorld();
-      obj2.updateMatrixWorld();
-      const box1 = obj1.geometry.boundingBox.clone().applyMatrix4(obj1.matrixWorld);
-      const box2 = obj2.geometry.boundingBox.clone().applyMatrix4(obj2.matrixWorld);
-      return box1.intersectsBox(box2);
+    function checkCollision(a, b) {
+      a.geometry.computeBoundingBox();
+      b.geometry.computeBoundingBox();
+      a.updateMatrixWorld();
+      b.updateMatrixWorld();
+      const boxA = a.geometry.boundingBox.clone().applyMatrix4(a.matrixWorld);
+      const boxB = b.geometry.boundingBox.clone().applyMatrix4(b.matrixWorld);
+      return boxA.intersectsBox(boxB);
     }
 
-    // --- Animationsschleife ---
     function animate() {
       requestAnimationFrame(animate);
 
-      // Tastaturbewegung
-      if (keys.left && chemist.position.x > -5) {
-        chemist.position.x -= 0.3;
-      }
-      if (keys.right && chemist.position.x < 5) {
-        chemist.position.x += 0.3;
-      }
+      // Links / Rechts
+      if (keys.left && chemist.position.x > -5) chemist.position.x -= 0.3;
+      if (keys.right && chemist.position.x < 5) chemist.position.x += 0.3;
 
-      // "Lauf" nach -Z
+      // Vorwärtslauf
       chemist.position.z -= gameSpeed;
-
-      // Kamera folgt
       camera.position.z = chemist.position.z + 10;
       camera.position.x = chemist.position.x;
       camera.lookAt(chemist.position.x, chemist.position.y, chemist.position.z);
 
-      // Spawnen
+      // Spawns
       if (Math.random() < obstacleFrequency) spawnObstacle();
       if (Math.random() < collectibleFrequency) spawnCollectible();
 
-      // Hindernisse updaten
-      obstacles.forEach((obs, index) => {
+      // Hindernisse
+      obstacles.forEach((obs, i) => {
         obs.position.z += gameSpeed;
         if (obs.position.z > chemist.position.z + 5) {
-          // Hinter dem Spieler -> entfernen
           scene.remove(obs);
-          obstacles.splice(index, 1);
+          obstacles.splice(i, 1);
         } else if (checkCollision(chemist, obs)) {
-          // Treffer
           lives--;
           scene.remove(obs);
-          obstacles.splice(index, 1);
+          obstacles.splice(i, 1);
           if (lives <= 0) gameOver();
         }
       });
 
-      // Sammelobjekte updaten
-      collectibles.forEach((col, index) => {
+      // Sammelobjekte
+      collectibles.forEach((col, i) => {
         col.position.z += gameSpeed;
         if (col.position.z > chemist.position.z + 5) {
           scene.remove(col);
-          collectibles.splice(index, 1);
+          collectibles.splice(i, 1);
         } else if (checkCollision(chemist, col)) {
           score++;
           scene.remove(col);
-          collectibles.splice(index, 1);
+          collectibles.splice(i, 1);
         }
       });
 
-      // Boden-Endlos-Effekt
+      // Boden
       ground.position.z += gameSpeed;
-      if (ground.position.z > 0) {
-        ground.position.z = -250;
-      }
+      if (ground.position.z > 0) ground.position.z = -250;
 
       renderer.render(scene, camera);
     }
@@ -231,7 +194,7 @@
 
     animate();
 
-    // --- Fenstergrösse anpassen ---
+    // Fenstergrösse anpassen
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
