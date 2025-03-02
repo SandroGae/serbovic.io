@@ -1,159 +1,174 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D-Abenteuer</title>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        #punkte { position: absolute; top: 10px; left: 10px; color: white; font-family: Arial; }
-        #leben { position: absolute; top: 30px; left: 10px; color: white; font-family: Arial; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D-Abenteuer</title>
+  <style>
+      body { margin: 0; overflow: hidden; }
+      #punkte { position: absolute; top: 10px; left: 10px; color: white; font-family: Arial; }
+      #leben { position: absolute; top: 30px; left: 10px; color: white; font-family: Arial; }
+  </style>
 </head>
 <body>
-    <div id="punkte">Punkte: 0</div>
-    <div id="leben">Leben: 3</div>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
-    <script>
-        // Szene, Kamera und Renderer
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+  <div id="punkte">Punkte: 0</div>
+  <div id="leben">Leben: 3</div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+  <script>
+      // Szene, Kamera und Renderer
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
 
-        // Beleuchtung
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(0, 10, 10);
-        scene.add(directionalLight);
+      // Beleuchtung
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(0, 10, 10);
+      scene.add(directionalLight);
 
-        // Hintergrund
-        scene.background = new THREE.Color(0x87CEEB); // Hellblau
+      // Hintergrund
+      scene.background = new THREE.Color(0x87CEEB); // Hellblau
 
-        // Boden
-        const groundGeometry = new THREE.PlaneGeometry(100, 100);
-        const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 }); // Grün
-        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        ground.rotation.x = -Math.PI / 2;
-        scene.add(ground);
+      // Boden
+      const groundGeometry = new THREE.PlaneGeometry(100, 100);
+      const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 }); // Gruen
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      scene.add(ground);
 
-        // Spieler (menschliche Figur)
-        let player;
-        const loader = new THREE.GLTFLoader();
-        loader.load('path/to/human.glb', (gltf) => {
-            player = gltf.scene;
-            player.position.set(0, 0, 0); // Startposition
-            scene.add(player);
-        });
+      // Spieler (menschliche Figur)
+      let player;
+      const loader = new THREE.GLTFLoader();
+      loader.load('path/to/human.glb',
+          (gltf) => {
+              player = gltf.scene;
+              player.position.set(0, 0, 0); // Startposition
+              scene.add(player);
+          },
+          undefined,
+          (error) => {
+              console.error('Fehler beim Laden des GLTF-Modells, benutze Fallback-Spieler', error);
+              // Fallback: Einfacher Würfel als Spieler
+              const geometry = new THREE.BoxGeometry(1, 2, 1);
+              const material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+              player = new THREE.Mesh(geometry, material);
+              player.position.set(0, 1, 0);
+              scene.add(player);
+          }
+      );
 
-        // Spielerbewegung
-        const playerSpeed = 0.1;
-        let leftPressed = false;
-        let rightPressed = false;
+      // Spielerbewegung
+      const playerSpeed = 0.1;
+      let leftPressed = false;
+      let rightPressed = false;
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') leftPressed = true;
-            if (e.key === 'ArrowRight') rightPressed = true;
-        });
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft') leftPressed = false;
-            if (e.key === 'ArrowRight') rightPressed = false;
-        });
+      window.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowLeft') leftPressed = true;
+          if (e.key === 'ArrowRight') rightPressed = true;
+      });
+      window.addEventListener('keyup', (e) => {
+          if (e.key === 'ArrowLeft') leftPressed = false;
+          if (e.key === 'ArrowRight') rightPressed = false;
+      });
 
-        // Hindernisse und Sammelobjekte
-        const obstacles = [];
-        const collectibles = [];
-        const obstacleSpeed = 0.2;
-        const collectibleSpeed = 0.2;
+      // Hindernisse und Sammelobjekte
+      const obstacles = [];
+      const collectibles = [];
+      const obstacleSpeed = 0.2;
+      const collectibleSpeed = 0.2;
 
-        function spawnObstacle() {
-            const geometry = new THREE.BoxGeometry(1, 1, 1);
-            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            const obstacle = new THREE.Mesh(geometry, material);
-            obstacle.position.set(Math.random() * 10 - 5, 0.5, -50);
-            scene.add(obstacle);
-            obstacles.push(obstacle);
-        }
+      function spawnObstacle() {
+          const geometry = new THREE.BoxGeometry(1, 1, 1);
+          const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+          const obstacle = new THREE.Mesh(geometry, material);
+          obstacle.position.set(Math.random() * 10 - 5, 0.5, -50);
+          scene.add(obstacle);
+          obstacles.push(obstacle);
+      }
 
-        function spawnCollectible() {
-            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            const collectible = new THREE.Mesh(geometry, material);
-            collectible.position.set(Math.random() * 10 - 5, 0.5, -50);
-            scene.add(collectible);
-            collectibles.push(collectible);
-        }
+      function spawnCollectible() {
+          const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+          const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+          const collectible = new THREE.Mesh(geometry, material);
+          collectible.position.set(Math.random() * 10 - 5, 0.5, -50);
+          scene.add(collectible);
+          collectibles.push(collectible);
+      }
 
-        // Punkte und Leben
-        let punkte = 0;
-        let leben = 3;
-        const punkteElement = document.getElementById('punkte');
-        const lebenElement = document.getElementById('leben');
+      // Punkte und Leben
+      let punkte = 0;
+      let leben = 3;
+      const punkteElement = document.getElementById('punkte');
+      const lebenElement = document.getElementById('leben');
 
-        // Kamera-Position
-        camera.position.set(0, 5, 10);
-        camera.lookAt(0, 0, 0);
+      // Kamera-Position
+      camera.position.set(0, 5, 10);
+      camera.lookAt(0, 0, 0);
 
-        // Spiel-Loop
-        function animate() {
-            requestAnimationFrame(animate);
+      // Spiel-Loop
+      function animate() {
+          requestAnimationFrame(animate);
 
-            // Spieler automatisch vorwärts bewegen
-            if (player) player.position.z -= 0.1;
+          // Operationen nur ausführen, wenn player existiert
+          if (player) {
+              // Spieler automatisch vorwärts bewegen
+              player.position.z -= 0.1;
 
-            // Spieler links/rechts bewegen
-            if (leftPressed && player.position.x > -5) player.position.x -= playerSpeed;
-            if (rightPressed && player.position.x < 5) player.position.x += playerSpeed;
+              // Spieler links/rechts bewegen
+              if (leftPressed && player.position.x > -5) player.position.x -= playerSpeed;
+              if (rightPressed && player.position.x < 5) player.position.x += playerSpeed;
 
-            // Hindernisse und Sammelobjekte spawnen
-            if (Math.random() < 0.02) spawnObstacle();
-            if (Math.random() < 0.02) spawnCollectible();
+              // Kamera folgt dem Spieler
+              camera.position.z = player.position.z + 10;
+              camera.position.x = player.position.x;
+          }
 
-            // Hindernisse bewegen und Kollision prüfen
-            obstacles.forEach((obs, index) => {
-                obs.position.z += obstacleSpeed;
-                if (obs.position.z > 10) {
-                    scene.remove(obs);
-                    obstacles.splice(index, 1);
-                }
-                if (player && Math.abs(player.position.x - obs.position.x) < 1 && Math.abs(player.position.z - obs.position.z) < 1) {
-                    leben -= 1;
-                    lebenElement.textContent = `Leben: ${leben}`;
-                    scene.remove(obs);
-                    obstacles.splice(index, 1);
-                    if (leben <= 0) {
-                        alert('Spiel vorbei! Punkte: ' + punkte);
-                        leben = 3;
-                        punkte = 0;
-                    }
-                }
-            });
+          // Hindernisse spawnen
+          if (Math.random() < 0.02) spawnObstacle();
+          if (Math.random() < 0.02) spawnCollectible();
 
-            // Sammelobjekte bewegen und Kollision prüfen
-            collectibles.forEach((col, index) => {
-                col.position.z += collectibleSpeed;
-                if (col.position.z > 10) {
-                    scene.remove(col);
-                    collectibles.splice(index, 1);
-                }
-                if (player && Math.abs(player.position.x - col.position.x) < 1 && Math.abs(player.position.z - col.position.z) < 1) {
-                    punkte += 1;
-                    punkteElement.textContent = `Punkte: ${punkte}`;
-                    scene.remove(col);
-                    collectibles.splice(index, 1);
-                }
-            });
+          // Hindernisse bewegen und Kollision prüfen
+          obstacles.forEach((obs, index) => {
+              obs.position.z += obstacleSpeed;
+              if (obs.position.z > 10) {
+                  scene.remove(obs);
+                  obstacles.splice(index, 1);
+              }
+              if (player && Math.abs(player.position.x - obs.position.x) < 1 && Math.abs(player.position.z - obs.position.z) < 1) {
+                  leben -= 1;
+                  lebenElement.textContent = `Leben: ${leben}`;
+                  scene.remove(obs);
+                  obstacles.splice(index, 1);
+                  if (leben <= 0) {
+                      alert('Spiel vorbei! Punkte: ' + punkte);
+                      leben = 3;
+                      punkte = 0;
+                  }
+              }
+          });
 
-            // Kamera folgt dem Spieler
-            camera.position.z = player.position.z + 10;
-            camera.position.x = player.position.x;
+          // Sammelobjekte bewegen und Kollision prüfen
+          collectibles.forEach((col, index) => {
+              col.position.z += collectibleSpeed;
+              if (col.position.z > 10) {
+                  scene.remove(col);
+                  collectibles.splice(index, 1);
+              }
+              if (player && Math.abs(player.position.x - col.position.x) < 1 && Math.abs(player.position.z - col.position.z) < 1) {
+                  punkte += 1;
+                  punkteElement.textContent = `Punkte: ${punkte}`;
+                  scene.remove(col);
+                  collectibles.splice(index, 1);
+              }
+          });
 
-            renderer.render(scene, camera);
-        }
-        animate();
-    </script>
+          renderer.render(scene, camera);
+      }
+      animate();
+  </script>
 </body>
 </html>
