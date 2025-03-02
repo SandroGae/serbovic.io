@@ -71,10 +71,10 @@
     const MAX_TREES              = 50;
     const MAX_STONES             = 50;
     // Spawn-Wahrscheinlichkeiten (pro Frame):
-    const OBSTACLE_SPAWN_PROB    = 0.1; // 5% Chance pro Frame
-    const COLLECTIBLE_SPAWN_PROB = 0.05; // 5% Chance pro Frame
-    const TREE_SPAWN_PROB        = 0.1; // 3% Chance pro Frame
-    const STONE_SPAWN_PROB       = 0.06; // 3% Chance pro Frame
+    const OBSTACLE_SPAWN_PROB    = 0.1;
+    const COLLECTIBLE_SPAWN_PROB = 0.05;
+    const TREE_SPAWN_PROB        = 0.1;
+    const STONE_SPAWN_PROB       = 0.06;
 
     // === Basisgeschwindigkeiten ===
     const basePlayerSpeed      = 0.2;
@@ -88,6 +88,9 @@
     // === Szene, Kamera und Renderer ===
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    // Startposition der Kamera: etwas höher und weiter hinten, um den Boden besser zu sehen
+    camera.position.set(0, 12, 20);
+    camera.lookAt(0, 0, 0);
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
@@ -97,14 +100,14 @@
     const outerGroundGeometry = new THREE.PlaneGeometry(100, 100);
     const outerGroundMaterial = new THREE.MeshPhongMaterial({ color: 0x006400 });
     const outerGround = new THREE.Mesh(outerGroundGeometry, outerGroundMaterial);
-    outerGround.rotation.x = -Math.PI/2;
+    outerGround.rotation.x = -Math.PI / 2;
     scene.add(outerGround);
 
     // Track: Bereich, in dem sich der Spieler bewegt (x zwischen -5 und 5) in Braun
     const trackGeometry = new THREE.PlaneGeometry(10, 100);
     const trackMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
     const track = new THREE.Mesh(trackGeometry, trackMaterial);
-    track.rotation.x = -Math.PI/2;
+    track.rotation.x = -Math.PI / 2;
     track.position.y = 0.01; // leicht angehoben, um Z-Fighting zu vermeiden
     scene.add(track);
 
@@ -263,7 +266,7 @@
       punkteElement.textContent = `Punkte: ${punkte}`;
       lebenElement.textContent = `Leben: ${leben}`;
       player.position.set(0, 0, 0);
-      camera.position.set(0, 5, 10);
+      camera.position.set(0, 12, 20);
       obstacles.forEach(obs => scene.remove(obs));
       collectibles.forEach(col => scene.remove(col));
       trees.forEach(tree => scene.remove(tree));
@@ -293,10 +296,10 @@
       if (rightPressed && player.position.x < 5)
         player.position.x += basePlayerSpeed * SPEED_MULTIPLIER;
 
-      // --- Kamera folgt dem Spieler ---
-      camera.position.z = player.position.z + 10;
-      camera.position.x = player.position.x;
-      camera.lookAt(player.position);
+      // --- Kamera anpassen: Perspektive ändern ---
+      // Hier wird die Kamera so gesetzt, dass sie höher steht und schräg auf den Spieler und den Boden blickt.
+      camera.position.set(player.position.x, 12, player.position.z + 20);
+      camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
 
       // --- Bodenbereiche aktualisieren ---
       outerGround.position.z = player.position.z;
