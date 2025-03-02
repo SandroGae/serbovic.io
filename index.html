@@ -3,18 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D-Abenteuer</title>
+  <title>3D-Chemiker</title>
   <style>
       body { margin: 0; overflow: hidden; }
-      #punkte { position: absolute; top: 10px; left: 10px; color: white; font-family: Arial; }
-      #leben { position: absolute; top: 30px; left: 10px; color: white; font-family: Arial; }
+      #punkte, #leben {
+          position: absolute;
+          left: 10px;
+          color: white;
+          font-family: Arial, sans-serif;
+      }
+      #punkte { top: 10px; }
+      #leben { top: 30px; }
+      #message {
+          position: absolute;
+          top: 40%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: #FFD700;
+          font-family: Arial, sans-serif;
+          font-size: 36px;
+          text-align: center;
+          background: rgba(0, 0, 0, 0.5);
+          padding: 20px;
+          border-radius: 10px;
+          display: none;
+      }
   </style>
 </head>
 <body>
   <div id="punkte">Punkte: 0</div>
   <div id="leben">Leben: 3</div>
+  <div id="message">Einladung zum All You Can Eat Fondue Shinuas!</div>
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
   <script>
       // Szene, Kamera und Renderer
       const scene = new THREE.Scene();
@@ -33,33 +53,29 @@
       // Hintergrund
       scene.background = new THREE.Color(0x87CEEB); // Hellblau
 
-      // Boden
+      // Boden (wird im Animate-Loop aktualisiert, damit er immer unter dem Spieler bleibt)
       const groundGeometry = new THREE.PlaneGeometry(100, 100);
-      const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 }); // Gruen
+      const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
       const ground = new THREE.Mesh(groundGeometry, groundMaterial);
       ground.rotation.x = -Math.PI / 2;
       scene.add(ground);
 
-      // Spieler (menschliche Figur)
-      let player;
-      const loader = new THREE.GLTFLoader();
-      loader.load('path/to/human.glb',
-          (gltf) => {
-              player = gltf.scene;
-              player.position.set(0, 0, 0); // Startposition
-              scene.add(player);
-          },
-          undefined,
-          (error) => {
-              console.error('Fehler beim Laden des GLTF-Modells, benutze Fallback-Spieler', error);
-              // Fallback: Einfacher Würfel als Spieler
-              const geometry = new THREE.BoxGeometry(1, 2, 1);
-              const material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-              player = new THREE.Mesh(geometry, material);
-              player.position.set(0, 1, 0);
-              scene.add(player);
-          }
-      );
+      // Spieler: Erstelle eine Gruppe mit einem Kopf (Sphere) und einem Körper (Box)
+      const player = new THREE.Group();
+      // Kopf
+      const headGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+      const headMaterial = new THREE.MeshBasicMaterial({ color: 0xffd1a4 });
+      const head = new THREE.Mesh(headGeometry, headMaterial);
+      head.position.y = 1.5;
+      player.add(head);
+      // Körper
+      const bodyGeometry = new THREE.BoxGeometry(1, 1, 0.5);
+      const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      body.position.y = 0.75;
+      player.add(body);
+      player.position.set(0, 0, 0);
+      scene.add(player);
 
       // Spielerbewegung
       const playerSpeed = 0.1;
@@ -85,7 +101,9 @@
           const geometry = new THREE.BoxGeometry(1, 1, 1);
           const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
           const obstacle = new THREE.Mesh(geometry, material);
-          obstacle.position.set(Math.random() * 10 - 5, 0.5, -50);
+          // Spawne relativ zur Spielerposition, wenn vorhanden
+          const spawnZ = player ? player.position.z - 50 : -50;
+          obstacle.position.set(Math.random() * 10 - 5, 0.5, spawnZ);
           scene.add(obstacle);
           obstacles.push(obstacle);
       }
@@ -94,7 +112,8 @@
           const geometry = new THREE.SphereGeometry(0.5, 32, 32);
           const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
           const collectible = new THREE.Mesh(geometry, material);
-          collectible.position.set(Math.random() * 10 - 5, 0.5, -50);
+          const spawnZ = player ? player.position.z - 50 : -50;
+          collectible.position.set(Math.random() * 10 - 5, 0.5, spawnZ);
           scene.add(collectible);
           collectibles.push(collectible);
       }
@@ -104,8 +123,9 @@
       let leben = 3;
       const punkteElement = document.getElementById('punkte');
       const lebenElement = document.getElementById('leben');
+      const messageElement = document.getElementById('message');
 
-      // Kamera-Position
+      // Kamera-Position initialisieren
       camera.position.set(0, 5, 10);
       camera.lookAt(0, 0, 0);
 
@@ -113,32 +133,32 @@
       function animate() {
           requestAnimationFrame(animate);
 
-          // Operationen nur ausführen, wenn player existiert
-          if (player) {
-              // Spieler automatisch vorwärts bewegen
-              player.position.z -= 0.1;
+          // Spieler bewegen
+          player.position.z -= 0.1; // Vorwärtsbewegung
+          if (leftPressed && player.position.x > -5) player.position.x -= playerSpeed;
+          if (rightPressed && player.position.x < 5) player.position.x += playerSpeed;
 
-              // Spieler links/rechts bewegen
-              if (leftPressed && player.position.x > -5) player.position.x -= playerSpeed;
-              if (rightPressed && player.position.x < 5) player.position.x += playerSpeed;
+          // Kamera folgt dem Spieler
+          camera.position.z = player.position.z + 10;
+          camera.position.x = player.position.x;
+          camera.lookAt(player.position);
 
-              // Kamera folgt dem Spieler
-              camera.position.z = player.position.z + 10;
-              camera.position.x = player.position.x;
-          }
+          // Aktualisiere den Boden, damit er immer unter dem Spieler liegt
+          ground.position.z = player.position.z;
 
-          // Hindernisse spawnen
+          // Hindernisse und Sammelobjekte spawnen
           if (Math.random() < 0.02) spawnObstacle();
           if (Math.random() < 0.02) spawnCollectible();
 
           // Hindernisse bewegen und Kollision prüfen
           obstacles.forEach((obs, index) => {
               obs.position.z += obstacleSpeed;
-              if (obs.position.z > 10) {
+              if (obs.position.z > player.position.z + 10) {
                   scene.remove(obs);
                   obstacles.splice(index, 1);
               }
-              if (player && Math.abs(player.position.x - obs.position.x) < 1 && Math.abs(player.position.z - obs.position.z) < 1) {
+              if (Math.abs(player.position.x - obs.position.x) < 1 &&
+                  Math.abs(player.position.z - obs.position.z) < 1) {
                   leben -= 1;
                   lebenElement.textContent = `Leben: ${leben}`;
                   scene.remove(obs);
@@ -147,6 +167,8 @@
                       alert('Spiel vorbei! Punkte: ' + punkte);
                       leben = 3;
                       punkte = 0;
+                      punkteElement.textContent = `Punkte: ${punkte}`;
+                      messageElement.style.display = 'none';
                   }
               }
           });
@@ -154,11 +176,12 @@
           // Sammelobjekte bewegen und Kollision prüfen
           collectibles.forEach((col, index) => {
               col.position.z += collectibleSpeed;
-              if (col.position.z > 10) {
+              if (col.position.z > player.position.z + 10) {
                   scene.remove(col);
                   collectibles.splice(index, 1);
               }
-              if (player && Math.abs(player.position.x - col.position.x) < 1 && Math.abs(player.position.z - col.position.z) < 1) {
+              if (Math.abs(player.position.x - col.position.x) < 1 &&
+                  Math.abs(player.position.z - col.position.z) < 1) {
                   punkte += 1;
                   punkteElement.textContent = `Punkte: ${punkte}`;
                   scene.remove(col);
@@ -166,9 +189,17 @@
               }
           });
 
+          // Ab einem Score von 30: Anzeige der Einladung
+          if (punkte >= 30) {
+              messageElement.style.display = 'block';
+          } else {
+              messageElement.style.display = 'none';
+          }
+
           renderer.render(scene, camera);
       }
       animate();
   </script>
 </body>
 </html>
+
