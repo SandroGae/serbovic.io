@@ -1,54 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>Chenksinsel Gridville</title>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.0/lib/p5.js"></script>
-    <style>body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #000000; }</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemiker-Abenteuer</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        canvas { border: 1px solid black; }
+    </style>
 </head>
 <body>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
     <script>
-        let player;
-        let obstacles = [];
-        function setup() {
-            createCanvas(400, 400);
-            player = new Player(50, 50, 20, 20);
-            for (let i = 0; i < 5; i++) {
-                let obstacle = new Obstacle(random(100, width - 20), random(100, height - 20), 10, 10);
-                obstacles.push(obstacle);
+        // Canvas und Kontext initialisieren
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Spieler (Chemiker)
+        let player = {
+            x: 185,         // Startposition horizontal
+            y: 550,         // Startposition vertikal (nahe Boden)
+            width: 30,      // Breite des Spielers
+            height: 30,     // Höhe des Spielers
+            speed: 5,       // Bewegungsgeschwindigkeit
+            lives: 3        // Anzahl der Leben
+        };
+
+        // Arrays für Hindernisse und Sammelobjekte
+        let obstacles = [];     // Physikgegenstände
+        let collectibles = [];  // Chemiegegenstände
+        let score = 0;          // Punktestand
+
+        // Tastatureingaben verwalten
+        let keys = {};
+        window.addEventListener('keydown', (e) => keys[e.key] = true);
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // Spielschleife
+        function gameLoop() {
+            if (player.lives > 0) {
+                update();       // Spielzustand aktualisieren
+                draw();         // Spiel rendern
             }
+            requestAnimationFrame(gameLoop); // Schleife fortsetzen
         }
+
+        // Spielzustand aktualisieren
+        function update() {
+            // Spieler bewegen
+            if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
+            if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += player.speed;
+
+            // Hindernisse und Sammelobjekte zufällig erzeugen
+            if (Math.random() < 0.02) spawnObstacle();
+            if (Math.random() < 0.02) spawnCollectible();
+
+            // Hindernisse bewegen und Kollision prüfen
+            obstacles.forEach((obs, index) => {
+                obs.y += 3; // Geschwindigkeit des Falls
+                if (obs.y > canvas.height) obstacles.splice(index, 1); // Entferne, wenn unten
+                if (collision(player, obs)) {
+                    player.lives -= 1; // Leben verlieren
+                    obstacles.splice(index, 1); // Hindernis entfernen
+                    if (player.lives <= 0) {
+                        alert('Spiel vorbei! Punkte: ' + score); // Spielende
+                    }
+                }
+            });
+
+            // Sammelobjekte bewegen und Kollision prüfen
+            collectibles.forEach((col, index) => {
+                col.y += 3; // Geschwindigkeit des Falls
+                if (col.y > canvas.height) collectibles.splice(index, 1); // Entferne, wenn unten
+                if (collision(player, col)) {
+                    score += 1; // Punkt erhöhen
+                    collectibles.splice(index, 1); // Sammelobjekt entfernen
+                }
+            });
+        }
+
+        // Spiel rendern
         function draw() {
-            background(0);
-            player.move();
-            player.show();
-            for (let obstacle of obstacles) obstacle.show();
+            // Canvas leeren
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Spieler zeichnen (Chemiker)
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Hindernisse zeichnen (Physikgegenstände)
+            ctx.fillStyle = 'red';
+            obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.width, obs.height));
+
+            // Sammelobjekte zeichnen (Chemiegegenstände)
+            ctx.fillStyle = 'green';
+            collectibles.forEach(col => ctx.fillRect(col.x, col.y, col.width, col.height));
+
+            // Punkte und Leben anzeigen
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText('Punkte: ' + score, 10, 30);
+            ctx.fillText('Leben: ' + player.lives, 10, 60);
         }
-        class Player {
-            constructor(x, y, w, h) {
-                this.x = x; this.y = y; this.w = w; this.h = h; this.speed = 4;
-            }
-            move() {
-                if (keyIsDown(LEFT_ARROW)) this.x -= this.speed;
-                if (keyIsDown(RIGHT_ARROW)) this.x += this.speed;
-                if (keyIsDown(UP_ARROW)) this.y -= this.speed;
-                if (keyIsDown(DOWN_ARROW)) this.y += this.speed;
-                this.x = constrain(this.x, 0, width - this.w);
-                this.y = constrain(this.y, 0, height - this.h);
-            }
-            show() {
-                fill(255);
-                rect(this.x, this.y, this.w, this.h);
-            }
+
+        // Hindernis erzeugen (Physikgegenstand)
+        function spawnObstacle() {
+            let obs = {
+                x: Math.random() * (canvas.width - 30), // Zufällige x-Position
+                y: 0,                                   // Start oben
+                width: 30,                              // Breite
+                height: 30                              // Höhe
+            };
+            obstacles.push(obs);
         }
-        class Obstacle {
-            constructor(x, y, w, h) {
-                this.x = x; this.y = y; this.w = w; this.h = h;
-            }
-            show() {
-                fill('red');
-                rect(this.x, this.y, this.w, this.h);
-            }
+
+        // Sammelobjekt erzeugen (Chemiegegenstand)
+        function spawnCollectible() {
+            let col = {
+                x: Math.random() * (canvas.width - 30), // Zufällige x-Position
+                y: 0,                                   // Start oben
+                width: 30,                              // Breite
+                height: 30                              // Höhe
+            };
+            collectibles.push(col);
         }
+
+        // Kollisionserkennung
+        function collision(a, b) {
+            return a.x < b.x + b.width && 
+                   a.x + a.width > b.x && 
+                   a.y < b.y + b.height && 
+                   a.y + a.height > b.y;
+        }
+
+        // Spiel starten
+        gameLoop();
     </script>
 </body>
 </html>
