@@ -88,9 +88,9 @@
     // === Szene, Kamera und Renderer ===
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    // Startposition der Kamera: etwas höher und weiter hinten, um den Boden besser zu sehen
-    camera.position.set(0, 12, 20);
-    camera.lookAt(0, 0, 0);
+    // Neuen Kamerawinkel, der näher am Spieler ist und weniger von oben schaut:
+    camera.position.set(player.position.x, 7, player.position.z + 12);
+    camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
