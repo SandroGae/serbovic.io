@@ -3,138 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chemiker-Abenteuer</title>
+    <title>3D-Abenteuer</title>
     <style>
-        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        canvas { border: 1px solid black; }
+        body { margin: 0; overflow: hidden; }
+        #punkte { position: absolute; top: 10px; left: 10px; color: white; font-family: Arial; }
+        #leben { position: absolute; top: 30px; left: 10px; color: white; font-family: Arial; }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div id="punkte">Punkte: 0</div>
+    <div id="leben">Leben: 3</div>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
     <script>
-        // Canvas und Kontext initialisieren
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        // Szene, Kamera und Renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-        // Spieler (Chemiker)
-        let player = {
-            x: 185,         // Startposition horizontal
-            y: 550,         // Startposition vertikal (nahe Boden)
-            width: 30,      // Breite des Spielers
-            height: 30,     // Höhe des Spielers
-            speed: 5,       // Bewegungsgeschwindigkeit
-            lives: 3        // Anzahl der Leben
-        };
+        // Beleuchtung
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(0, 10, 10);
+        scene.add(directionalLight);
 
-        // Arrays für Hindernisse und Sammelobjekte
-        let obstacles = [];     // Physikgegenstände
-        let collectibles = [];  // Chemiegegenstände
-        let score = 0;          // Punktestand
+        // Hintergrund
+        scene.background = new THREE.Color(0x87CEEB); // Hellblau
 
-        // Tastatureingaben verwalten
-        let keys = {};
-        window.addEventListener('keydown', (e) => keys[e.key] = true);
-        window.addEventListener('keyup', (e) => keys[e.key] = false);
+        // Boden
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
+        const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 }); // Grün
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
 
-        // Spielschleife
-        function gameLoop() {
-            if (player.lives > 0) {
-                update();       // Spielzustand aktualisieren
-                draw();         // Spiel rendern
-            }
-            requestAnimationFrame(gameLoop); // Schleife fortsetzen
+        // Spieler (menschliche Figur)
+        let player;
+        const loader = new THREE.GLTFLoader();
+        loader.load('path/to/human.glb', (gltf) => {
+            player = gltf.scene;
+            player.position.set(0, 0, 0); // Startposition
+            scene.add(player);
+        });
+
+        // Spielerbewegung
+        const playerSpeed = 0.1;
+        let leftPressed = false;
+        let rightPressed = false;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') leftPressed = true;
+            if (e.key === 'ArrowRight') rightPressed = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') leftPressed = false;
+            if (e.key === 'ArrowRight') rightPressed = false;
+        });
+
+        // Hindernisse und Sammelobjekte
+        const obstacles = [];
+        const collectibles = [];
+        const obstacleSpeed = 0.2;
+        const collectibleSpeed = 0.2;
+
+        function spawnObstacle() {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const obstacle = new THREE.Mesh(geometry, material);
+            obstacle.position.set(Math.random() * 10 - 5, 0.5, -50);
+            scene.add(obstacle);
+            obstacles.push(obstacle);
         }
 
-        // Spielzustand aktualisieren
-        function update() {
-            // Spieler bewegen
-            if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
-            if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += player.speed;
+        function spawnCollectible() {
+            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const collectible = new THREE.Mesh(geometry, material);
+            collectible.position.set(Math.random() * 10 - 5, 0.5, -50);
+            scene.add(collectible);
+            collectibles.push(collectible);
+        }
 
-            // Hindernisse und Sammelobjekte zufällig erzeugen
+        // Punkte und Leben
+        let punkte = 0;
+        let leben = 3;
+        const punkteElement = document.getElementById('punkte');
+        const lebenElement = document.getElementById('leben');
+
+        // Kamera-Position
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
+
+        // Spiel-Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Spieler automatisch vorwärts bewegen
+            if (player) player.position.z -= 0.1;
+
+            // Spieler links/rechts bewegen
+            if (leftPressed && player.position.x > -5) player.position.x -= playerSpeed;
+            if (rightPressed && player.position.x < 5) player.position.x += playerSpeed;
+
+            // Hindernisse und Sammelobjekte spawnen
             if (Math.random() < 0.02) spawnObstacle();
             if (Math.random() < 0.02) spawnCollectible();
 
             // Hindernisse bewegen und Kollision prüfen
             obstacles.forEach((obs, index) => {
-                obs.y += 3; // Geschwindigkeit des Falls
-                if (obs.y > canvas.height) obstacles.splice(index, 1); // Entferne, wenn unten
-                if (collision(player, obs)) {
-                    player.lives -= 1; // Leben verlieren
-                    obstacles.splice(index, 1); // Hindernis entfernen
-                    if (player.lives <= 0) {
-                        alert('Spiel vorbei! Punkte: ' + score); // Spielende
+                obs.position.z += obstacleSpeed;
+                if (obs.position.z > 10) {
+                    scene.remove(obs);
+                    obstacles.splice(index, 1);
+                }
+                if (player && Math.abs(player.position.x - obs.position.x) < 1 && Math.abs(player.position.z - obs.position.z) < 1) {
+                    leben -= 1;
+                    lebenElement.textContent = `Leben: ${leben}`;
+                    scene.remove(obs);
+                    obstacles.splice(index, 1);
+                    if (leben <= 0) {
+                        alert('Spiel vorbei! Punkte: ' + punkte);
+                        leben = 3;
+                        punkte = 0;
                     }
                 }
             });
 
             // Sammelobjekte bewegen und Kollision prüfen
             collectibles.forEach((col, index) => {
-                col.y += 3; // Geschwindigkeit des Falls
-                if (col.y > canvas.height) collectibles.splice(index, 1); // Entferne, wenn unten
-                if (collision(player, col)) {
-                    score += 1; // Punkt erhöhen
-                    collectibles.splice(index, 1); // Sammelobjekt entfernen
+                col.position.z += collectibleSpeed;
+                if (col.position.z > 10) {
+                    scene.remove(col);
+                    collectibles.splice(index, 1);
+                }
+                if (player && Math.abs(player.position.x - col.position.x) < 1 && Math.abs(player.position.z - col.position.z) < 1) {
+                    punkte += 1;
+                    punkteElement.textContent = `Punkte: ${punkte}`;
+                    scene.remove(col);
+                    collectibles.splice(index, 1);
                 }
             });
+
+            // Kamera folgt dem Spieler
+            camera.position.z = player.position.z + 10;
+            camera.position.x = player.position.x;
+
+            renderer.render(scene, camera);
         }
-
-        // Spiel rendern
-        function draw() {
-            // Canvas leeren
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Spieler zeichnen (Chemiker)
-            ctx.fillStyle = 'blue';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-
-            // Hindernisse zeichnen (Physikgegenstände)
-            ctx.fillStyle = 'red';
-            obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.width, obs.height));
-
-            // Sammelobjekte zeichnen (Chemiegegenstände)
-            ctx.fillStyle = 'green';
-            collectibles.forEach(col => ctx.fillRect(col.x, col.y, col.width, col.height));
-
-            // Punkte und Leben anzeigen
-            ctx.fillStyle = 'black';
-            ctx.font = '20px Arial';
-            ctx.fillText('Punkte: ' + score, 10, 30);
-            ctx.fillText('Leben: ' + player.lives, 10, 60);
-        }
-
-        // Hindernis erzeugen (Physikgegenstand)
-        function spawnObstacle() {
-            let obs = {
-                x: Math.random() * (canvas.width - 30), // Zufällige x-Position
-                y: 0,                                   // Start oben
-                width: 30,                              // Breite
-                height: 30                              // Höhe
-            };
-            obstacles.push(obs);
-        }
-
-        // Sammelobjekt erzeugen (Chemiegegenstand)
-        function spawnCollectible() {
-            let col = {
-                x: Math.random() * (canvas.width - 30), // Zufällige x-Position
-                y: 0,                                   // Start oben
-                width: 30,                              // Breite
-                height: 30                              // Höhe
-            };
-            collectibles.push(col);
-        }
-
-        // Kollisionserkennung
-        function collision(a, b) {
-            return a.x < b.x + b.width && 
-                   a.x + a.width > b.x && 
-                   a.y < b.y + b.height && 
-                   a.y + a.height > b.y;
-        }
-
-        // Spiel starten
-        gameLoop();
+        animate();
     </script>
 </body>
 </html>
