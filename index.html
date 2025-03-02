@@ -63,26 +63,25 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
   <script>
-      // Konstanten zur Steuerung der Spielparameter (im Code anpassbar)
+      // Parameter, direkt im Code anpassbar:
       const SPEED_MULTIPLIER = 1.0;
       const MAX_OBSTACLES = 10;
       const MAX_COLLECTIBLES = 10;
-      const MAX_TREES = 15;
-      const MAX_STONES = 15;
+      const MAX_TREES = 15;    // Ändere hier die Anzahl der Bäume (z. B. 20 für mehr)
+      const MAX_STONES = 15;   // Ändere hier die Anzahl der Steine (z. B. 20 für mehr)
 
       // Basisgeschwindigkeiten
       const basePlayerSpeed = 0.1;
       const baseObstacleSpeed = 0.2;
       const baseCollectibleSpeed = 0.2;
       const baseEnvSpeed = 0.15;  // Geschwindigkeit für Bäume und Steine
-      const cloudSpeed = 0.01;    // Geschwindigkeit der Wolken
+      const cloudSpeed = 0.01;    // Wolkengeschwindigkeit
 
-      // Globale Variable, um den Spielstatus zu steuern
       let gameActive = true;
 
       // Szene, Kamera und Renderer
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
       const renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
@@ -92,16 +91,15 @@
       const outerGroundGeometry = new THREE.PlaneGeometry(100, 100);
       const outerGroundMaterial = new THREE.MeshPhongMaterial({ color: 0x006400 });
       const outerGround = new THREE.Mesh(outerGroundGeometry, outerGroundMaterial);
-      outerGround.rotation.x = -Math.PI / 2;
+      outerGround.rotation.x = -Math.PI/2;
       scene.add(outerGround);
 
       // Track: Bereich der Spielerbewegung (x zwischen -5 und 5) in Braun
       const trackGeometry = new THREE.PlaneGeometry(10, 100);
       const trackMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
       const track = new THREE.Mesh(trackGeometry, trackMaterial);
-      track.rotation.x = -Math.PI / 2;
-      // Etwas hochsetzen, um Z-Fighting zu vermeiden
-      track.position.y = 0.01;
+      track.rotation.x = -Math.PI/2;
+      track.position.y = 0.01; // leicht angehoben, um Z-Fighting zu vermeiden
       scene.add(track);
 
       // Beleuchtung
@@ -114,7 +112,7 @@
       // Hintergrund (Himmel)
       scene.background = new THREE.Color(0x87CEEB);
 
-      // Wolken: Erstelle ein Array und füge bewegende Wolken hinzu
+      // Wolken: Erstelle Wolken, die sich langsam bewegen
       const clouds = [];
       function createCloud(x, y, z) {
           const cloud = new THREE.Group();
@@ -129,14 +127,16 @@
           cloud.add(part1);
           cloud.add(part2);
           cloud.add(part3);
+          // Größere Wolke:
+          cloud.scale.set(2, 2, 2);
           cloud.position.set(x, y, z);
           scene.add(cloud);
           clouds.push(cloud);
       }
-      // Erstelle einige Wolken an unterschiedlichen Positionen
-      createCloud(-10, 15, -20);
-      createCloud(5, 20, -30);
-      createCloud(12, 18, -25);
+      // Platziere Wolken im oberen Bereich des Himmels:
+      createCloud(-20, 25, -40);
+      createCloud(0, 30, -50);
+      createCloud(20, 27, -45);
 
       // Spieler: Gruppe aus Kopf und Körper
       const player = new THREE.Group();
@@ -157,35 +157,35 @@
       let leftPressed = false;
       let rightPressed = false;
       window.addEventListener('keydown', (e) => {
-          if (e.key === 'ArrowLeft') leftPressed = true;
-          if (e.key === 'ArrowRight') rightPressed = true;
+          if(e.key === 'ArrowLeft') leftPressed = true;
+          if(e.key === 'ArrowRight') rightPressed = true;
       });
       window.addEventListener('keyup', (e) => {
-          if (e.key === 'ArrowLeft') leftPressed = false;
-          if (e.key === 'ArrowRight') rightPressed = false;
+          if(e.key === 'ArrowLeft') leftPressed = false;
+          if(e.key === 'ArrowRight') rightPressed = false;
       });
 
       // Hindernisse und Sammelobjekte
       let obstacles = [];
       let collectibles = [];
       function spawnObstacle() {
-          if (obstacles.length < MAX_OBSTACLES) {
+          if(obstacles.length < MAX_OBSTACLES) {
               const geometry = new THREE.BoxGeometry(1, 1, 1);
               const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
               const obstacle = new THREE.Mesh(geometry, material);
               const spawnZ = player.position.z - 50;
-              obstacle.position.set(Math.random() * 10 - 5, 0.5, spawnZ);
+              obstacle.position.set(Math.random()*10 - 5, 0.5, spawnZ);
               scene.add(obstacle);
               obstacles.push(obstacle);
           }
       }
       function spawnCollectible() {
-          if (collectibles.length < MAX_COLLECTIBLES) {
+          if(collectibles.length < MAX_COLLECTIBLES) {
               const geometry = new THREE.SphereGeometry(0.5, 32, 32);
               const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
               const collectible = new THREE.Mesh(geometry, material);
               const spawnZ = player.position.z - 50;
-              collectible.position.set(Math.random() * 10 - 5, 0.5, spawnZ);
+              collectible.position.set(Math.random()*10 - 5, 0.5, spawnZ);
               scene.add(collectible);
               collectibles.push(collectible);
           }
@@ -195,7 +195,7 @@
       let trees = [];
       let stones = [];
       function spawnTree() {
-          if (trees.length < MAX_TREES) {
+          if(trees.length < MAX_TREES) {
               const tree = new THREE.Group();
               // Baumstamm: Größerer Zylinder
               const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2);
@@ -209,7 +209,7 @@
               const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
               foliage.position.y = 2.5;
               tree.add(foliage);
-              // Verteile über den gesamten grünen Bereich (x ∈ [-50, -5] oder [5, 50])
+              // Über den gesamten grünen Außenbereich verteilen (x ∈ [-50,-5] oder [5,50])
               let side = Math.random() < 0.5 ? -1 : 1;
               let xMin = 5, xMax = 50;
               let xPos = side * (xMin + Math.random() * (xMax - xMin));
@@ -220,7 +220,7 @@
           }
       }
       function spawnStone() {
-          if (stones.length < MAX_STONES) {
+          if(stones.length < MAX_STONES) {
               const stoneGeometry = new THREE.IcosahedronGeometry(1, 0);
               const stoneMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 });
               const stone = new THREE.Mesh(stoneGeometry, stoneMaterial);
@@ -274,47 +274,49 @@
       // Spiel-Loop
       function animate() {
           requestAnimationFrame(animate);
-          if (!gameActive) {
+          if(!gameActive) {
               renderer.render(scene, camera);
               return;
           }
 
           // Spieler bewegen
           player.position.z -= basePlayerSpeed * SPEED_MULTIPLIER;
-          if (leftPressed && player.position.x > -5) player.position.x -= basePlayerSpeed * SPEED_MULTIPLIER;
-          if (rightPressed && player.position.x < 5) player.position.x += basePlayerSpeed * SPEED_MULTIPLIER;
+          if(leftPressed && player.position.x > -5) 
+              player.position.x -= basePlayerSpeed * SPEED_MULTIPLIER;
+          if(rightPressed && player.position.x < 5) 
+              player.position.x += basePlayerSpeed * SPEED_MULTIPLIER;
 
           // Kamera folgt dem Spieler
           camera.position.z = player.position.z + 10;
           camera.position.x = player.position.x;
           camera.lookAt(player.position);
 
-          // Aktualisiere Bodenbereiche
+          // Bodenbereiche aktualisieren
           outerGround.position.z = player.position.z;
           track.position.z = player.position.z;
 
           // Hindernisse und Sammelobjekte spawnen
-          if (Math.random() < 0.02) spawnObstacle();
-          if (Math.random() < 0.02) spawnCollectible();
+          if(Math.random() < 0.02) spawnObstacle();
+          if(Math.random() < 0.02) spawnCollectible();
 
           // Dekorative Objekte spawnen
-          if (Math.random() < 0.01) spawnTree();
-          if (Math.random() < 0.01) spawnStone();
+          if(Math.random() < 0.01) spawnTree();
+          if(Math.random() < 0.01) spawnStone();
 
           // Hindernisse bewegen und Kollision prüfen
           obstacles.forEach((obs, index) => {
               obs.position.z += baseObstacleSpeed * SPEED_MULTIPLIER;
-              if (obs.position.z > player.position.z + 10) {
+              if(obs.position.z > player.position.z + 10) {
                   scene.remove(obs);
                   obstacles.splice(index, 1);
               }
-              if (Math.abs(player.position.x - obs.position.x) < 1 &&
-                  Math.abs(player.position.z - obs.position.z) < 1) {
+              if(Math.abs(player.position.x - obs.position.x) < 1 &&
+                 Math.abs(player.position.z - obs.position.z) < 1) {
                   leben -= 1;
                   lebenElement.textContent = `Leben: ${leben}`;
                   scene.remove(obs);
                   obstacles.splice(index, 1);
-                  if (leben <= 0) {
+                  if(leben <= 0) {
                       gameActive = false;
                       gameOverElement.style.display = 'block';
                   }
@@ -324,12 +326,12 @@
           // Sammelobjekte bewegen und Kollision prüfen
           collectibles.forEach((col, index) => {
               col.position.z += baseCollectibleSpeed * SPEED_MULTIPLIER;
-              if (col.position.z > player.position.z + 10) {
+              if(col.position.z > player.position.z + 10) {
                   scene.remove(col);
                   collectibles.splice(index, 1);
               }
-              if (Math.abs(player.position.x - col.position.x) < 1 &&
-                  Math.abs(player.position.z - col.position.z) < 1) {
+              if(Math.abs(player.position.x - col.position.x) < 1 &&
+                 Math.abs(player.position.z - col.position.z) < 1) {
                   punkte += 1;
                   punkteElement.textContent = `Punkte: ${punkte}`;
                   scene.remove(col);
@@ -337,32 +339,33 @@
               }
           });
 
-          // Dekorative Objekte bewegen (Bäume und Steine)
+          // Bäume und Steine bewegen
           trees.forEach((tree, index) => {
               tree.position.z += baseEnvSpeed * SPEED_MULTIPLIER;
-              if (tree.position.z > player.position.z + 10) {
+              if(tree.position.z > player.position.z + 10) {
                   scene.remove(tree);
                   trees.splice(index, 1);
               }
           });
           stones.forEach((stone, index) => {
               stone.position.z += baseEnvSpeed * SPEED_MULTIPLIER;
-              if (stone.position.z > player.position.z + 10) {
+              if(stone.position.z > player.position.z + 10) {
                   scene.remove(stone);
                   stones.splice(index, 1);
               }
           });
 
-          // Wolken langsam bewegen (horizontal)
+          // Wolken langsam bewegen – sie erhalten einen leichten horizontalen Versatz
           clouds.forEach(cloud => {
               cloud.position.x += cloudSpeed;
-              if (cloud.position.x > 50) {
+              // Damit sie nicht endlos nach rechts wandern:
+              if(cloud.position.x > 50) {
                   cloud.position.x = -50;
               }
           });
 
-          // Ab einem Score von 30: Einladung anzeigen, Spiel pausieren
-          if (punkte >= 30) {
+          // Ab Score 30: Einladung anzeigen und Spiel pausieren
+          if(punkte >= 30) {
               gameActive = false;
               messageElement.style.display = 'block';
           }
