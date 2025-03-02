@@ -32,38 +32,68 @@
     <div>Spiel vorbei! Punkte: <span id="finalScore"></span></div>
     <button id="restartBtn">Neustarten</button>
   </div>
-  <!-- Three.js ueber CDN einbinden -->
+  
+  <!-- Three.js über CDN einbinden -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    // Szene, Kamera und Renderer initialisieren
+    // --- Szene, Kamera, Renderer ---
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0xa0a0a0, 50, 200);
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 5, 10);
-    camera.lookAt(0, 0, 0);
+    scene.fog = new THREE.Fog(0xa0a0a0, 50, 300);
+
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    // Kamera leicht erhöht hinter dem Spieler
+    camera.position.set(0, 3, 10);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Beleuchtung
+    // --- Beleuchtung ---
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(0, 10, 5);
     scene.add(directionalLight);
 
-    // Weg (Boden) erzeugen
+    // --- TEXTUREN LADEN ---
+    const textureLoader = new THREE.TextureLoader();
+
+    // 1) Bodentextur (Waldweg)
+    // Ersetze 'dirt.jpg' ggf. durch eine echte URL oder einen anderen Dateinamen.
+    const pathTexture = textureLoader.load('dirt.jpg');
+    pathTexture.wrapS = THREE.RepeatWrapping;
+    pathTexture.wrapT = THREE.RepeatWrapping;
+    // Wiederhol-Faktor anpassen: so sieht man die Textur öfter kachelartig
+    pathTexture.repeat.set(1, 10);
+
+    // 2) Umgebungstextur (360° Wald)
+    // Ersetze 'forest.jpg' durch ein 360°-Bild im Equirect-Format
+    const forestTexture = textureLoader.load('forest.jpg');
+    // Damit man in der Sphäre steht, muss die Textur von innen sichtbar sein
+    const environmentGeometry = new THREE.SphereGeometry(500, 60, 40);
+    const environmentMaterial = new THREE.MeshBasicMaterial({
+      map: forestTexture,
+      side: THREE.BackSide
+    });
+    const environment = new THREE.Mesh(environmentGeometry, environmentMaterial);
+    scene.add(environment);
+
+    // --- BODEN (Plane) ---
     const groundGeometry = new THREE.PlaneGeometry(20, 500);
-    const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x555555 });
+    const groundMaterial = new THREE.MeshPhongMaterial({ map: pathTexture });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.z = -250;
+    ground.position.z = -250; // Start weiter hinten
     scene.add(ground);
 
-    // Spieler (Chemiker) als 3D-Gruppe erstellen
+    // --- SPIELER (Chemiker) ---
     const chemist = new THREE.Group();
-    // Koerper
+    // Körper
     const bodyGeometry = new THREE.BoxGeometry(1, 2, 0.5);
     const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
@@ -75,24 +105,33 @@
     const head = new THREE.Mesh(headGeometry, headMaterial);
     head.position.y = 2.5;
     chemist.add(head);
+
     chemist.position.set(0, 0, 0);
     scene.add(chemist);
 
-    // Spielvariablen
+    // --- Spielvariablen ---
     let score = 0;
     let lives = 3;
     let obstacles = [];
     let collectibles = [];
-    const gameSpeed = 0.2;  // Spielgeschwindigkeit
-    const obstacleFrequency = 0.02;
-    const collectibleFrequency = 0.02;
+    const gameSpeed = 0.2;  // Geschwindigkeit in z-Richtung
+    // Erhöhe Spawn-Chancen, damit man definitiv etwas sieht
+    const obstacleFrequency = 0.05;   // 5% pro Frame -> ~3 Objekte/sek
+    const collectibleFrequency = 0.05;
 
-    // Tastatureingaben
-    let keys = {};
-    window.addEventListener('keydown', (e) => keys[e.key] = true);
-    window.addEventListener('keyup', (e) => keys[e.key] = false);
+    // --- Tastatureingaben ---
+    let keys = { left: false, right: false };
 
-    // Overlay-Elemente fuer Game Over
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowLeft') keys.left = true;
+      if (e.code === 'ArrowRight') keys.right = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft') keys.left = false;
+      if (e.code === 'ArrowRight') keys.right = false;
+    });
+
+    // --- Overlay-Elemente (Game Over) ---
     const overlay = document.getElementById('overlay');
     const finalScore = document.getElementById('finalScore');
     const restartBtn = document.getElementById('restartBtn');
@@ -106,16 +145,18 @@
       obstacles = [];
       collectibles = [];
       overlay.style.display = 'none';
-      chemist.position.x = 0;
-      chemist.position.z = 0;
+
+      // Spieler und Boden zurücksetzen
+      chemist.position.set(0, 0, 0);
+      ground.position.z = -250;
     }
 
-    // Hindernisse (Physikgegenstaende, rot) erzeugen
+    // --- Hindernisse (Physikgegenstände, rot) ---
     function spawnObstacle() {
       const geometry = new THREE.BoxGeometry(1, 1, 1);
       const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
       const obstacle = new THREE.Mesh(geometry, material);
-      // Zufall: x-Position im Weg, z-Position relativ zum Spieler
+      // Zufall: x-Position auf dem Weg, z hinter dem Spieler
       obstacle.position.x = (Math.random() - 0.5) * 10;
       obstacle.position.y = 0.5;
       obstacle.position.z = chemist.position.z - 50;
@@ -123,7 +164,7 @@
       obstacles.push(obstacle);
     }
 
-    // Sammelobjekte (Chemiegegenstaende, gruene Kugeln) erzeugen
+    // --- Sammelobjekte (Chemiegegenstände, grüne Kugeln) ---
     function spawnCollectible() {
       const geometry = new THREE.SphereGeometry(0.5, 16, 16);
       const material = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
@@ -135,7 +176,7 @@
       collectibles.push(collectible);
     }
 
-    // Einfache Kollisionserkennung ueber Bounding Boxes
+    // --- Kollision (Bounding Boxes) ---
     function checkCollision(obj1, obj2) {
       obj1.geometry.computeBoundingBox();
       obj2.geometry.computeBoundingBox();
@@ -146,29 +187,30 @@
       return box1.intersectsBox(box2);
     }
 
-    // Animationsschleife
+    // --- Hauptschleife ---
     function animate() {
       requestAnimationFrame(animate);
 
-      // Spielerbewegung: Links und Rechts (begrenzter Bereich)
-      if (keys['ArrowLeft'] && chemist.position.x > -5) {
+      // Spielerbewegung: links / rechts
+      if (keys.left && chemist.position.x > -5) {
         chemist.position.x -= 0.3;
       }
-      if (keys['ArrowRight'] && chemist.position.x < 5) {
+      if (keys.right && chemist.position.x < 5) {
         chemist.position.x += 0.3;
       }
 
-      // Simuliere Laufbewegung: Spieler bewegt sich in z-Richtung
+      // Spieler "läuft" in -z-Richtung
       chemist.position.z -= gameSpeed;
+      // Kamera folgt dem Spieler
       camera.position.z = chemist.position.z + 10;
       camera.position.x = chemist.position.x;
       camera.lookAt(chemist.position.x, chemist.position.y, chemist.position.z);
 
-      // Zufallsgesteuert Hindernisse und Sammelobjekte erzeugen
+      // Wahrscheinlichkeitsbasiertes Spawnen
       if (Math.random() < obstacleFrequency) spawnObstacle();
       if (Math.random() < collectibleFrequency) spawnCollectible();
 
-      // Objekte bewegen und Kollision pruefen
+      // Hindernisse bewegen, entfernen, kollidieren
       obstacles.forEach((obs, index) => {
         obs.position.z += gameSpeed;
         if (obs.position.z > chemist.position.z + 5) {
@@ -182,6 +224,7 @@
         }
       });
 
+      // Sammelobjekte bewegen, entfernen, kollidieren
       collectibles.forEach((col, index) => {
         col.position.z += gameSpeed;
         if (col.position.z > chemist.position.z + 5) {
@@ -194,9 +237,11 @@
         }
       });
 
-      // Bewegter Weg: Der Boden wird kontinuierlich verschoben
+      // Boden soll Endlos-Effekt erzeugen
       ground.position.z += gameSpeed;
-      if (ground.position.z > 0) ground.position.z = -250;
+      if (ground.position.z > 0) {
+        ground.position.z = -250;
+      }
 
       renderer.render(scene, camera);
     }
@@ -208,7 +253,7 @@
 
     animate();
 
-    // Anpassen der Groesse bei Fensterveraenderung
+    // --- Größenanpassung bei Fensteränderung ---
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -217,4 +262,3 @@
   </script>
 </body>
 </html>
-
