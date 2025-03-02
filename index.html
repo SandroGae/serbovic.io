@@ -88,9 +88,9 @@
     // === Szene, Kamera und Renderer ===
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    // Neuen Kamerawinkel, der näher am Spieler ist und weniger von oben schaut:
-    camera.position.set(player.position.x, 7, player.position.z + 12);
-    camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
+    // Startposition der Kamera: zunächst näher am Spieler
+    camera.position.set(0, 7, 12);
+    camera.lookAt(0, 0, 0);
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
@@ -266,7 +266,7 @@
       punkteElement.textContent = `Punkte: ${punkte}`;
       lebenElement.textContent = `Leben: ${leben}`;
       player.position.set(0, 0, 0);
-      camera.position.set(0, 12, 20);
+      camera.position.set(0, 7, 12);
       obstacles.forEach(obs => scene.remove(obs));
       collectibles.forEach(col => scene.remove(col));
       trees.forEach(tree => scene.remove(tree));
@@ -296,9 +296,9 @@
       if (rightPressed && player.position.x < 5)
         player.position.x += basePlayerSpeed * SPEED_MULTIPLIER;
 
-      // --- Kamera anpassen: Perspektive ändern ---
-      // Hier wird die Kamera so gesetzt, dass sie höher steht und schräg auf den Spieler und den Boden blickt.
-      camera.position.set(player.position.x, 12, player.position.z + 20);
+      // --- Kamera anpassen: Nähe und Winkel ändern ---
+      // Kamera sitzt jetzt näher am Spieler und etwas niedriger, sodass der Boden gut sichtbar ist.
+      camera.position.set(player.position.x, 7, player.position.z + 12);
       camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
 
       // --- Bodenbereiche aktualisieren ---
