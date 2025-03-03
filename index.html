@@ -307,50 +307,29 @@
       collectibles.forEach(col => scene.remove(col));
       trees.forEach(tree => scene.remove(tree));
       stones.forEach(stone => scene.remove(stone));
-      
       obstacles = [];
       collectibles = [];
       trees = [];
       stones = [];
-      
       gameOverElement.style.display = 'none';
       messageElement.style.display = 'none';
       gameActive = true;
-      }
-      
-      restartBtn.addEventListener('click', resetGame);
-      
-      // === Animations-Loop ===
-      function animate() {
-          requestAnimationFrame(animate);
-      
-          if (!gameActive) {
-              renderer.render(scene, camera);
-              return;
-          }
-      
-          // Spieler bewegt sich nach vorne
-          player.position.z -= basePlayerSpeed * SPEED_MULTIPLIER;
-      
-          // Kamera folgt dem Spieler
-          camera.position.set(player.position.x, 7, player.position.z + 10);
-          camera.lookAt(player.position.x, 0, player.position.z);
-      
-          // Wolken Z-Position fixieren, damit sie sich nicht von der Figur entfernen
-          clouds.forEach(cloud => {
-              cloud.position.z = player.position.z - 40; // Fixe Distanz zur Spielfigur
-          });
-      
-          renderer.render(scene, camera);
-      }
-      
-      // Spielerbewegung
-      player.position.z -= basePlayerSpeed * SPEED_MULTIPLIER;
-      
-      if (leftPressed && player.position.x > -5) {
-          player.position.x -= basePlayerSpeed * SPEED_MULTIPLIER;
+    }
+    restartBtn.addEventListener('click', resetGame);
+
+    // === Animations-Loop ===
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!gameActive) {
+        renderer.render(scene, camera);
+        return;
       }
 
+      // Spielerbewegung
+      player.position.z -= basePlayerSpeed * SPEED_MULTIPLIER;
+      if (leftPressed && player.position.x > -5) {
+        player.position.x -= basePlayerSpeed * SPEED_MULTIPLIER;
+      }
       if (rightPressed && player.position.x < 5) {
         player.position.x += basePlayerSpeed * SPEED_MULTIPLIER;
       }
