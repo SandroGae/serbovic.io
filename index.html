@@ -221,7 +221,8 @@
         const obstacle = obstacleModel.clone();
         const spawnZ = player.position.z - 50;
         obstacle.position.set(Math.random() * 10 - 5, 1, spawnZ);
-        obstacle.scale.set(0.5, 0.5, 0.5);
+        obstacle.rotation.y = Math.PI / 2; // 90 Grad in Radiant
+        obstacle.scale.set(0.2, 0.2, 0.2);
 
         scene.add(obstacle);
         obstacles.push(obstacle);
