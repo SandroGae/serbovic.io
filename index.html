@@ -181,17 +181,19 @@
     let stones = [];
 
     // === Hindernisse spawnen ===
-    function spawnObstacle() {
-      if (obstacles.length < MAX_OBSTACLES) {
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const obstacle = new THREE.Mesh(geometry, material);
+function spawnObstacle() {
+    if (obstacles.length < MAX_OBSTACLES && obstacleModel) {  
+        const obstacle = obstacleModel.clone();  // Klone das 3D-Modell
         const spawnZ = player.position.z - 50;
-        // Im Track-Bereich (x zwischen -5 und 5)
+
+        // Setze das Hindernis zufällig auf der Spur (x zwischen -5 und 5)
         obstacle.position.set(Math.random() * 10 - 5, 0.5, spawnZ);
+        
+        // Falls das Modell zu groß oder klein ist, anpassen:
+        obstacle.scale.set(0.5, 0.5, 0.5);  // Größe des Modells anpassen
+
         scene.add(obstacle);
         obstacles.push(obstacle);
-      }
     }
 
     // === Sammelobjekte spawnen ===
