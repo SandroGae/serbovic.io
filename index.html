@@ -132,32 +132,56 @@
     // === Hintergrund (Himmel) ===
     scene.background = new THREE.Color(0x87CEEB);
 
-    // === Wolken, die sich langsam bewegen ===
+    // === Wolken-Logik ===
     const clouds = [];
+    const MAX_CLOUDS = 5; // Maximale Anzahl gleichzeitig sichtbarer Wolken
+    
     function createCloud(x, y, z) {
-      const cloud = new THREE.Group();
-      const cloudGeo = new THREE.SphereGeometry(1, 16, 16);
-      const cloudMat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
-      const part1 = new THREE.Mesh(cloudGeo, cloudMat);
-      const part2 = new THREE.Mesh(cloudGeo, cloudMat);
-      const part3 = new THREE.Mesh(cloudGeo, cloudMat);
-
-      part1.position.set(0, 0, 0);
-      part2.position.set(1, 0.2, 0);
-      part3.position.set(-1, 0.2, 0);
-      cloud.add(part1);
-      cloud.add(part2);
-      cloud.add(part3);
-
-      cloud.scale.set(2, 2, 2);  // Groessere Wolke
-      cloud.position.set(x, y, z);
-      scene.add(cloud);
-      clouds.push(cloud);
+        const cloud = new THREE.Group();
+        const cloudGeo = new THREE.SphereGeometry(1, 16, 16);
+        const cloudMat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+    
+        const part1 = new THREE.Mesh(cloudGeo, cloudMat);
+        const part2 = new THREE.Mesh(cloudGeo, cloudMat);
+        const part3 = new THREE.Mesh(cloudGeo, cloudMat);
+        
+        part1.position.set(0, 0, 0);
+        part2.position.set(1, 0.2, 0);
+        part3.position.set(-1, 0.2, 0);
+        
+        cloud.add(part1);
+        cloud.add(part2);
+        cloud.add(part3);
+    
+        cloud.scale.set(2, 2, 2); // Größere Wolke
+        cloud.position.set(x, y, z);
+        scene.add(cloud);
+        clouds.push(cloud);
     }
-    // Wolken im oberen Bereich platzieren:
+    
+    // Anfangsplatzierung der Wolken (mittlere Wolke um 10 Einheiten höher)
     createCloud(-20, 5, -40);
-    createCloud(0, 3, -50);
+    createCloud(0, 15, -50);  // M I T T L E R E  W O L K E  10 EINHEITEN HÖHER
     createCloud(20, 12, -45);
+    
+    // === Funktion zum zufälligen Spawnen von Wolken ===
+    function spawnCloud() {
+        if (clouds.length < MAX_CLOUDS) {
+            let x = Math.random() * 80 - 40; // Zufällige X-Position
+            let y = Math.random() * 10 + 10; // Höhe zwischen 10 und 20
+            let z = player.position.z - 70; // Weit hinter dem Spieler
+            
+            createCloud(x, y, z);
+        }
+    }
+    
+    // === Zufällige Intervall-Spawning für Wolken (nicht zu oft) ===
+    setInterval(() => {
+        if (Math.random() < 0.3) { // 30% Chance pro Intervall
+            spawnCloud();
+        }
+    }, 5000); // Alle 5 Sekunden prüfen
+
 
     // === Spieler (Gruppe aus Kopf und Koerper) ===
     const player = new THREE.Group();
