@@ -81,8 +81,8 @@
 
     // === Basisgeschwindigkeiten ===
     const basePlayerSpeed      = 0.22;
-    const baseObstacleSpeed    = 0.4;
-    const baseCollectibleSpeed = 0.4;
+    const baseObstacleSpeed    = 0.3;
+    const baseCollectibleSpeed = 0.3;
     const baseEnvSpeed         = 0.3;  // Geschwindigkeit fuer Baeume und Steine
     const cloudSpeed           = 0.02; // Wolkengeschwindigkeit
 
@@ -155,9 +155,9 @@
       clouds.push(cloud);
     }
     // Wolken im oberen Bereich platzieren:
-    createCloud(-20, 25, -40);
-    createCloud(0, 30, -50);
-    createCloud(20, 27, -45);
+    createCloud(-20, 5, -40);
+    createCloud(0, 3, -50);
+    createCloud(20, 0, -45);
 
     // === Spieler (Gruppe aus Kopf und Koerper) ===
     const player = new THREE.Group();
