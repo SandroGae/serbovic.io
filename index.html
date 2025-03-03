@@ -180,23 +180,46 @@
     let trees = [];
     let stones = [];
 
+    // === GLTFLoader für das Hindernismodell ===
+    const loader = new THREE.GLTFLoader();
+    let obstacleModel;  // Variable zum Speichern des geladenen Modells
+    
+    loader.load(
+      'https://raw.githubusercontent.com/SandroGae/serbovic.io/main/scene.gltf',
+      function (gltf) {
+        obstacleModel = gltf.scene;
+        obstacleModel.scale.set(1, 1, 1);  // Falls nötig, Größe anpassen
+        console.log("Modell erfolgreich geladen:", obstacleModel);
+      },
+      undefined,
+      function (error) {
+        console.error('Fehler beim Laden des 3D-Modells:', error);
+      }
+    );
     // === Hindernisse spawnen ===
+
     function spawnObstacle() {
-      if (obstacles.length < MAX_OBSTACLES && obstacleModel) {  
+    if (obstacles.length < MAX_OBSTACLES) {  
+        if (!obstacleModel) {
+            console.warn("Hindernis-Spawn übersprungen: Modell ist noch nicht geladen.");
+            return;
+        }
+
         const obstacle = obstacleModel.clone();  // Klone das 3D-Modell
         const spawnZ = player.position.z - 50;
 
         // Setze das Hindernis zufällig auf der Spur (x zwischen -5 und 5)
-        obstacle.position.set(Math.random() * 10 - 5, 0.5, spawnZ);
+        obstacle.position.set(Math.random() * 10 - 5, 1, spawnZ);
         
         // Falls das Modell zu groß oder klein ist, anpassen:
         obstacle.scale.set(0.5, 0.5, 0.5);  // Größe des Modells anpassen
 
         scene.add(obstacle);
         obstacles.push(obstacle);
-      }
-    }
 
+        console.log("Hindernis gespawnt:", obstacle.position);
+    }
+}
     // === Sammelobjekte spawnen ===
     function spawnCollectible() {
       if (collectibles.length < MAX_COLLECTIBLES) {
