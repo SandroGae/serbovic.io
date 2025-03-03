@@ -161,8 +161,8 @@
     
     // Anfangsplatzierung der Wolken (mittlere Wolke um 10 Einheiten höher)
     createCloud(-20, 5, -40);
-    createCloud(0, 15, -50);  // M I T T L E R E  W O L K E  10 EINHEITEN HÖHER
-    createCloud(20, 12, -45);
+    createCloud(0, 10, -50);
+    createCloud(20, 7, -45);
     
     // === Funktion zum zufälligen Spawnen von Wolken ===
     function spawnCloud() {
@@ -177,7 +177,7 @@
     
     // === Zufällige Intervall-Spawning für Wolken (nicht zu oft) ===
     setInterval(() => {
-        if (Math.random() < 0.3) { // 30% Chance pro Intervall
+        if (Math.random() < 0.6) { // 30% Chance pro Intervall
             spawnCloud();
         }
     }, 5000); // Alle 5 Sekunden prüfen
