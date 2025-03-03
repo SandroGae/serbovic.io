@@ -361,6 +361,8 @@
       // Kamera anpassen
       camera.position.set(player.position.x, 7, player.position.z + 7);
       camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
+      camera.rotation.x = -Math.PI / 6; // 30 Grad nach unten
+
 
       // Bodenbereiche aktualisieren
       outerGround.position.z = player.position.z;
