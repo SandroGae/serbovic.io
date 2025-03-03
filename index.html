@@ -221,8 +221,9 @@
         }
         const obstacle = obstacleModel.clone();
         const spawnZ = player.position.z - 50;
-        obstacle.position.set(Math.random() * 10 - 5, 1, spawnZ);
-        obstacle.scale.set(0.5, 0.5, 0.5);
+        obstacle.position.set(Math.random() * 10 - 5, 1, spawnZ-1);
+        obstacle.rotation.y = Math.PI / 2;
+        obstacle.scale.set(0.15, 0.15, 0.15);
         scene.add(obstacle);
         obstacles.push(obstacle);
         console.log("Hindernis gespawnt:", obstacle.position);
