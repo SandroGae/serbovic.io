@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Drei.js und GLTFLoader von jsDelivr -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
   <title>3D-Chemiker</title>
   <style>
@@ -55,14 +57,14 @@
   <div id="punkte">Punkte: 0</div>
   <div id="leben">Leben: 3</div>
   <div id="message">
-    <h1>Herzlichen Glückwunsch, Joel, zum 28. Geburtstag!</h1>
+    <h1>Herzlichen Glueckwunsch, Joel, zum 28. Geburtstag!</h1>
     <p>Einladung zum All You Can Eat Fondue Shinuas!</p>
   </div>
   <div id="gameOver">
     <h1>Game Over!</h1>
     <button id="restartBtn">Neu starten</button>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+
   <script>
     // === Konfigurierbare Parameter ===
     const SPEED_MULTIPLIER       = 1.0;
@@ -81,23 +83,28 @@
     const basePlayerSpeed      = 0.22;
     const baseObstacleSpeed    = 0.4;
     const baseCollectibleSpeed = 0.4;
-    const baseEnvSpeed         = 0.3;  // Geschwindigkeit für Bäume und Steine
-    const cloudSpeed           = 0.02;  // Wolkengeschwindigkeit
+    const baseEnvSpeed         = 0.3;  // Geschwindigkeit fuer Baeume und Steine
+    const cloudSpeed           = 0.02; // Wolkengeschwindigkeit
 
     let gameActive = true;
 
     // === Szene, Kamera und Renderer ===
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    // Startposition der Kamera: zunächst näher am Spieler
+    const camera = new THREE.PerspectiveCamera(
+      75, 
+      window.innerWidth / window.innerHeight, 
+      0.1, 
+      1000
+    );
     camera.position.set(0, 7, 12);
     camera.lookAt(0, 0, 0);
+
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
     // === Boden: Zwei Bereiche ===
-    // Außenbereich (dunkles Grün) – 100x100
+    // Aussenbereich (dunkles Gruen) – 100x100
     const outerGroundGeometry = new THREE.PlaneGeometry(100, 100);
     const outerGroundMaterial = new THREE.MeshPhongMaterial({ color: 0x006400 });
     const outerGround = new THREE.Mesh(outerGroundGeometry, outerGroundMaterial);
@@ -115,6 +122,7 @@
     // === Beleuchtung ===
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
+
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(0, 10, 10);
     scene.add(directionalLight);
@@ -131,13 +139,15 @@
       const part1 = new THREE.Mesh(cloudGeo, cloudMat);
       const part2 = new THREE.Mesh(cloudGeo, cloudMat);
       const part3 = new THREE.Mesh(cloudGeo, cloudMat);
+
       part1.position.set(0, 0, 0);
       part2.position.set(1, 0.2, 0);
       part3.position.set(-1, 0.2, 0);
       cloud.add(part1);
       cloud.add(part2);
       cloud.add(part3);
-      cloud.scale.set(2, 2, 2);  // Größere Wolke
+
+      cloud.scale.set(2, 2, 2);  // Groessere Wolke
       cloud.position.set(x, y, z);
       scene.add(cloud);
       clouds.push(cloud);
@@ -147,18 +157,20 @@
     createCloud(0, 30, -50);
     createCloud(20, 27, -45);
 
-    // === Spieler (Gruppe aus Kopf und Körper) ===
+    // === Spieler (Gruppe aus Kopf und Koerper) ===
     const player = new THREE.Group();
     const headGeometry = new THREE.SphereGeometry(0.5, 32, 32);
     const headMaterial = new THREE.MeshBasicMaterial({ color: 0xffd1a4 });
     const head = new THREE.Mesh(headGeometry, headMaterial);
     head.position.y = 1.5;
     player.add(head);
+
     const bodyGeometry = new THREE.BoxGeometry(1, 1, 0.5);
     const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     body.position.y = 0.75;
     player.add(body);
+
     player.position.set(0, 0, 0);
     scene.add(player);
 
@@ -174,21 +186,22 @@
       if (e.key === 'ArrowRight') rightPressed = false;
     });
 
-    // === Arrays für Objekte ===
+    // === Arrays fuer Objekte ===
     let obstacles = [];
     let collectibles = [];
     let trees = [];
     let stones = [];
 
-    // === GLTFLoader für das Hindernismodell ===
+    // === GLTFLoader fuer das Hindernismodell ===
     const loader = new THREE.GLTFLoader();
-    let obstacleModel;  // Variable zum Speichern des geladenen Modells
-    
+    let obstacleModel = null;
+
+    // Lade dein GLTF-Modell aus dem lokalen Ordner "models/"
     loader.load(
-      'https://raw.githubusercontent.com/SandroGae/serbovic.io/main/scene.gltf',
+      'models/scene.gltf',  // Pfad anpassen, falls noetig
       function (gltf) {
         obstacleModel = gltf.scene;
-        obstacleModel.scale.set(1, 1, 1);  // Falls nötig, Größe anpassen
+        obstacleModel.scale.set(1, 1, 1);  
         console.log("Modell erfolgreich geladen:", obstacleModel);
       },
       undefined,
@@ -196,23 +209,19 @@
         console.error('Fehler beim Laden des 3D-Modells:', error);
       }
     );
+
     // === Hindernisse spawnen ===
-
     function spawnObstacle() {
-    if (obstacles.length < MAX_OBSTACLES) {  
+      if (obstacles.length < MAX_OBSTACLES) {
         if (!obstacleModel) {
-            console.warn("Hindernis-Spawn übersprungen: Modell ist noch nicht geladen.");
-            return;
+          console.warn("Hindernis-Spawn uebersprungen: Modell ist noch nicht geladen.");
+          return;
         }
-
-        const obstacle = obstacleModel.clone();  // Klone das 3D-Modell
+        // Falls das Modell zu gross oder klein ist, anpassen:
+        const obstacle = obstacleModel.clone();
         const spawnZ = player.position.z - 50;
-
-        // Setze das Hindernis zufällig auf der Spur (x zwischen -5 und 5)
         obstacle.position.set(Math.random() * 10 - 5, 1, spawnZ);
-        
-        // Falls das Modell zu groß oder klein ist, anpassen:
-        obstacle.scale.set(0.5, 0.5, 0.5);  // Größe des Modells anpassen
+        obstacle.scale.set(0.5, 0.5, 0.5);
 
         scene.add(obstacle);
         obstacles.push(obstacle);
@@ -220,6 +229,7 @@
         console.log("Hindernis gespawnt:", obstacle.position);
       }
     }
+
     // === Sammelobjekte spawnen ===
     function spawnCollectible() {
       if (collectibles.length < MAX_COLLECTIBLES) {
@@ -233,7 +243,7 @@
       }
     }
 
-    // === Bäume spawnen ===
+    // === Baeume spawnen ===
     function spawnTree() {
       if (trees.length < MAX_TREES) {
         const tree = new THREE.Group();
@@ -243,19 +253,21 @@
         const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
         trunk.position.y = 1.0;
         tree.add(trunk);
+
         // Laub
         const foliageGeometry = new THREE.ConeGeometry(1, 3, 8);
         const foliageMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
         const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
         foliage.position.y = 2.5;
         tree.add(foliage);
-        // Über den gesamten grünen Außenbereich verteilen:
-        // x-Werte zwischen 5 und 70 (bzw. -5 und -70)
+
+        // Position im Aussenbereich
         let side = Math.random() < 0.5 ? -1 : 1;
         let xMin = 5, xMax = 70;
         let xPos = side * (xMin + Math.random() * (xMax - xMin));
         let zPos = player.position.z - 50;
         tree.position.set(xPos, 0, zPos);
+
         scene.add(tree);
         trees.push(tree);
       }
@@ -286,7 +298,7 @@
     const gameOverElement = document.getElementById('gameOver');
     const restartBtn = document.getElementById('restartBtn');
 
-    // === Spiel zurücksetzen ===
+    // === Spiel zuruecksetzen ===
     function resetGame() {
       punkte = 0;
       leben = 3;
@@ -294,14 +306,17 @@
       lebenElement.textContent = `Leben: ${leben}`;
       player.position.set(0, 0, 0);
       camera.position.set(0, 7, 12);
+
       obstacles.forEach(obs => scene.remove(obs));
       collectibles.forEach(col => scene.remove(col));
       trees.forEach(tree => scene.remove(tree));
       stones.forEach(stone => scene.remove(stone));
+
       obstacles = [];
       collectibles = [];
       trees = [];
       stones = [];
+
       gameOverElement.style.display = 'none';
       messageElement.style.display = 'none';
       gameActive = true;
@@ -316,29 +331,30 @@
         return;
       }
 
-      // --- Spielerbewegung ---
+      // Spielerbewegung
       player.position.z -= basePlayerSpeed * SPEED_MULTIPLIER;
-      if (leftPressed && player.position.x > -5)
+      if (leftPressed && player.position.x > -5) {
         player.position.x -= basePlayerSpeed * SPEED_MULTIPLIER;
-      if (rightPressed && player.position.x < 5)
+      }
+      if (rightPressed && player.position.x < 5) {
         player.position.x += basePlayerSpeed * SPEED_MULTIPLIER;
+      }
 
-      // --- Kamera anpassen: Nähe und Winkel ändern ---
-      // Kamera sitzt jetzt näher am Spieler und etwas niedriger, sodass der Boden gut sichtbar ist.
+      // Kamera anpassen
       camera.position.set(player.position.x, 7, player.position.z + 12);
       camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
 
-      // --- Bodenbereiche aktualisieren ---
+      // Bodenbereiche aktualisieren
       outerGround.position.z = player.position.z;
       track.position.z = player.position.z;
 
-      // --- Objekte spawnen (Spawn-Wahrscheinlichkeiten aus Konstanten) ---
+      // Objekte spawnen
       if (Math.random() < OBSTACLE_SPAWN_PROB) spawnObstacle();
       if (Math.random() < COLLECTIBLE_SPAWN_PROB) spawnCollectible();
       if (Math.random() < TREE_SPAWN_PROB) spawnTree();
       if (Math.random() < STONE_SPAWN_PROB) spawnStone();
 
-      // --- Hindernisse bewegen und Kollision prüfen ---
+      // Hindernisse bewegen + Kollision
       obstacles.forEach((obs, index) => {
         obs.position.z += baseObstacleSpeed * SPEED_MULTIPLIER;
         if (obs.position.z > player.position.z + 10) {
@@ -358,7 +374,7 @@
         }
       });
 
-      // --- Sammelobjekte bewegen und Kollision prüfen ---
+      // Sammelobjekte bewegen + Kollision
       collectibles.forEach((col, index) => {
         col.position.z += baseCollectibleSpeed * SPEED_MULTIPLIER;
         if (col.position.z > player.position.z + 10) {
@@ -374,7 +390,7 @@
         }
       });
 
-      // --- Bäume und Steine bewegen ---
+      // Baeume und Steine bewegen
       trees.forEach((tree, index) => {
         tree.position.z += baseEnvSpeed * SPEED_MULTIPLIER;
         if (tree.position.z > player.position.z + 10) {
@@ -390,7 +406,7 @@
         }
       });
 
-      // --- Wolken bewegen (horizontal) ---
+      // Wolken bewegen (horizontal)
       clouds.forEach(cloud => {
         cloud.position.x += cloudSpeed;
         if (cloud.position.x > 50) {
@@ -398,7 +414,7 @@
         }
       });
 
-      // --- Ab einem Score von 28: Einladung anzeigen und Spiel pausieren ---
+      // Ab Score 28: Einladung anzeigen + Spiel pausieren
       if (punkte >= 28) {
         gameActive = false;
         messageElement.style.display = 'block';
