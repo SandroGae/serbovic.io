@@ -181,8 +181,8 @@
     let stones = [];
 
     // === Hindernisse spawnen ===
-function spawnObstacle() {
-    if (obstacles.length < MAX_OBSTACLES && obstacleModel) {  
+    function spawnObstacle() {
+      if (obstacles.length < MAX_OBSTACLES && obstacleModel) {  
         const obstacle = obstacleModel.clone();  // Klone das 3D-Modell
         const spawnZ = player.position.z - 50;
 
