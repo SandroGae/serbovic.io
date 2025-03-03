@@ -220,9 +220,9 @@
         // Falls das Modell zu gross oder klein ist, anpassen:
         const obstacle = obstacleModel.clone();
         const spawnZ = player.position.z - 50;
-        obstacle.position.set(Math.random() * 10 - 5, 1, spawnZ);
+        obstacle.position.set(Math.random() * 10 - 5, 0, spawnZ);
         obstacle.rotation.y = Math.PI / 2; // 90 Grad in Radiant
-        obstacle.scale.set(0.2, 0.2, 0.2);
+        obstacle.scale.set(0.15, 0.15, 0.15);
 
         scene.add(obstacle);
         obstacles.push(obstacle);
