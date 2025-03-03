@@ -194,8 +194,8 @@ function spawnObstacle() {
 
         scene.add(obstacle);
         obstacles.push(obstacle);
+      }
     }
-}
 
     // === Sammelobjekte spawnen ===
     function spawnCollectible() {
@@ -375,8 +375,8 @@ function spawnObstacle() {
         }
       });
 
-      // --- Ab einem Score von 30: Einladung anzeigen und Spiel pausieren ---
-      if (punkte >= 30) {
+      // --- Ab einem Score von 28: Einladung anzeigen und Spiel pausieren ---
+      if (punkte >= 28) {
         gameActive = false;
         messageElement.style.display = 'block';
       }
