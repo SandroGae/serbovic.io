@@ -84,7 +84,7 @@
     const baseObstacleSpeed    = 0.3;
     const baseCollectibleSpeed = 0.3;
     const baseEnvSpeed         = 0.3;  // Geschwindigkeit fuer Baeume und Steine
-    const cloudSpeed           = 0;    // Wolkengeschwindigkeit
+    const cloudSpeed           = 0; // Wolkengeschwindigkeit
 
     let gameActive = true;
 
@@ -153,34 +153,35 @@
         cloud.add(part2);
         cloud.add(part3);
     
-        cloud.scale.set(2, 2, 2); // Groessere Wolke
+        cloud.scale.set(2, 2, 2); // Größere Wolke
         cloud.position.set(x, y, z);
         scene.add(cloud);
         clouds.push(cloud);
     }
     
-    // Anfangsplatzierung der Wolken
+    // Anfangsplatzierung der Wolken (mittlere Wolke um 10 Einheiten höher)
     createCloud(-20, 5, -40);
     createCloud(0, 10, -50);
     createCloud(20, 7, -45);
     
-    // === Funktion zum zufaelligen Spawnen von Wolken ===
+    // === Funktion zum zufälligen Spawnen von Wolken ===
     function spawnCloud() {
         if (clouds.length < MAX_CLOUDS) {
-            let x = Math.random() * 80 - 40; // Zufaellige X-Position
-            let y = Math.random() * 10 + 10; // Hoehe zwischen 10 und 20
-            let z = player.position.z - 70;  // Weit hinter dem Spieler
+            let x = Math.random() * 80 - 40; // Zufällige X-Position
+            let y = Math.random() * 10 + 10; // Höhe zwischen 10 und 20
+            let z = player.position.z - 70; // Weit hinter dem Spieler
             
             createCloud(x, y, z);
         }
     }
     
-    // === Zufall in Intervallen fuer Wolken (nicht zu oft) ===
+    // === Zufällige Intervall-Spawning für Wolken (nicht zu oft) ===
     setInterval(() => {
-        if (Math.random() < 0.6) { // 60% Chance pro Intervall
+        if (Math.random() < 0.6) { // 30% Chance pro Intervall
             spawnCloud();
         }
-    }, 5000);
+    }, 5000); // Alle 5 Sekunden prüfen
+
 
     // === Spieler (Gruppe aus Kopf und Koerper) ===
     const player = new THREE.Group();
@@ -217,36 +218,21 @@
     let trees = [];
     let stones = [];
 
-    // === GLTFLoader ===
+    // === GLTFLoader fuer das Hindernismodell ===
     const loader = new THREE.GLTFLoader();
-
-    // Hindernismodell
     let obstacleModel = null;
+
+    // Lade das GLTF-Modell aus dem lokalen Ordner "models/"
     loader.load(
-      'models/scene.gltf',
+      'models/scene.gltf',  // Pfad anpassen, falls noetig
       function (gltf) {
         obstacleModel = gltf.scene;
-        obstacleModel.scale.set(1, 1, 1);
-        console.log("Hindernis-Modell erfolgreich geladen:", obstacleModel);
+        obstacleModel.scale.set(1, 1, 1);  
+        console.log("Modell erfolgreich geladen:", obstacleModel);
       },
       undefined,
       function (error) {
-        console.error('Fehler beim Laden des Hindernis-Modells:', error);
-      }
-    );
-
-    // Collectible-Modell
-    let collectibleModel = null;
-    loader.load(
-      'model_2/scene.gltf',
-      function (gltf) {
-        collectibleModel = gltf.scene;
-        collectibleModel.scale.set(0.5, 0.5, 0.5);
-        console.log("Collectible-Modell erfolgreich geladen:", collectibleModel);
-      },
-      undefined,
-      function (error) {
-        console.error('Fehler beim Laden des Collectible-Modells:', error);
+        console.error('Fehler beim Laden des 3D-Modells:', error);
       }
     );
 
@@ -264,17 +250,16 @@
         obstacle.scale.set(0.12, 0.12, 0.12);
         scene.add(obstacle);
         obstacles.push(obstacle);
+        console.log("Hindernis gespawnt:", obstacle.position);
       }
     }
 
-    // === Sammelobjekte spawnen (ersetzt die gruene Kugel durch collectibleModel) ===
+    // === Sammelobjekte spawnen ===
     function spawnCollectible() {
       if (collectibles.length < MAX_COLLECTIBLES) {
-        if (!collectibleModel) {
-          console.warn("Collectible-Spawn uebersprungen: Modell ist noch nicht geladen.");
-          return;
-        }
-        const collectible = collectibleModel.clone();
+        const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const collectible = new THREE.Mesh(geometry, material);
         const spawnZ = player.position.z - 50;
         collectible.position.set(Math.random() * 10 - 5, 0.5, spawnZ);
         scene.add(collectible);
@@ -298,7 +283,6 @@
         const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
         foliage.position.y = 2.5;
         tree.add(foliage);
-
         // Position im Aussenbereich
         let side = Math.random() < 0.5 ? -1 : 1;
         let xMin = 5, xMax = 70;
@@ -378,6 +362,7 @@
       camera.position.set(player.position.x, 7, player.position.z + 5);
       camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
       camera.rotation.x = -Math.PI / 6; // 30 Grad nach unten
+
 
       // Bodenbereiche aktualisieren
       outerGround.position.z = player.position.z;
