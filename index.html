@@ -117,7 +117,7 @@
 
   <script>
     // === Konfigurierbare Parameter ===
-    const SPEED_MULTIPLIER       = 40.0;
+    const SPEED_MULTIPLIER       = 50.0;
     // Maximale Anzahl der Objekte:
     const MAX_OBSTACLES          = 50;
     const MAX_COLLECTIBLES       = 20;
@@ -224,7 +224,7 @@
       if (Math.random() < 0.6) {
         spawnCloud();
       }
-    }, 5000);
+    }, 750);
 
     // === Spieler (Gruppe aus Kopf und Koerper) ===
     const player = new THREE.Group();
