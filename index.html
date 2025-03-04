@@ -326,6 +326,8 @@
         const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
         foliage.position.y = 2.5;
         tree.add(foliage);
+        tree.scale.set(1.5, 1.5, 1.5);
+
 
         let side = Math.random() < 0.5 ? -1 : 1;
         let xMin = 5, xMax = 70;
