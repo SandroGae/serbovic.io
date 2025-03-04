@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>3D Shooter - Ultimate Game World</title>
+  <title>3D Shooter - Sniper Game</title>
   <style>
     body { margin: 0; overflow: hidden; background: #87CEEB; }
     #info {
@@ -35,7 +35,8 @@
   <div id="info">
     Steuerung:<br>
     W - vorwaerts, S - rueckwaerts,<br>
-    A - links drehen, D - rechts drehen,<br>
+    A - links, D - rechts,<br>
+    Maus bewegen = Zielen,<br>
     Linke Maustaste: Schiessen.
   </div>
   <div id="crosshair"></div>
@@ -45,196 +46,243 @@
   
   <script>
     let scene, camera, renderer;
-    let player, playerSpeed = 5, rotationSpeed = Math.PI; // Einheiten pro Sekunde / Radiant pro Sekunde
+    let player, playerSpeed = 10;
     let bullets = [];
     let explosions = [];
-    let shootableTargets = [];
+    let shootableObjects = [];
+    let stones = [];
     let keys = {};
     let lastTime = performance.now();
-    
+
+    // Variablen für Kamerasteuerung (Zielen)
+    let camYaw = 0;
+    let camPitch = 0.2; // in Radianten (~11.5°)
+    let mouseSensitivity = 0.002;
+
     init();
     animate();
-    
+
     function init() {
-      // Szene und Kamera
+      // Szene & Hintergrund (Himmel)
       scene = new THREE.Scene();
-      scene.fog = new THREE.Fog(0x87CEEB, 100, 600);
-      
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-      
+      scene.fog = new THREE.Fog(0x87CEEB, 100, 800);
+      scene.background = new THREE.Color(0x87CEEB);
+
+      // Kamera
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+
       // Renderer
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.shadowMap.enabled = true;
       document.body.appendChild(renderer.domElement);
-      
+
       // Licht
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
       scene.add(ambientLight);
-      
       const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-      directionalLight.position.set(50, 100, 50);
+      directionalLight.position.set(100, 200, 100);
       directionalLight.castShadow = true;
-      directionalLight.shadow.camera.left = -200;
-      directionalLight.shadow.camera.right = 200;
-      directionalLight.shadow.camera.top = 200;
-      directionalLight.shadow.camera.bottom = -200;
+      directionalLight.shadow.camera.left = -300;
+      directionalLight.shadow.camera.right = 300;
+      directionalLight.shadow.camera.top = 300;
+      directionalLight.shadow.camera.bottom = -300;
       scene.add(directionalLight);
-      
+
       // Boden (Gras)
-      const groundGeo = new THREE.PlaneGeometry(1000, 1000);
+      const groundGeo = new THREE.PlaneGeometry(2000, 2000);
       const groundMat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
       const ground = new THREE.Mesh(groundGeo, groundMat);
-      ground.rotation.x = -Math.PI/2;
+      ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
       scene.add(ground);
-      
+
       // Wasser (See)
-      const waterGeo = new THREE.PlaneGeometry(200, 200);
+      const waterGeo = new THREE.PlaneGeometry(400, 400);
       const waterMat = new THREE.MeshStandardMaterial({ color: 0x1E90FF, transparent: true, opacity: 0.6 });
       const water = new THREE.Mesh(waterGeo, waterMat);
-      water.rotation.x = -Math.PI/2;
-      water.position.set(150, 0.2, -100);
+      water.rotation.x = -Math.PI / 2;
+      water.position.set(300, 0.2, -300);
       water.receiveShadow = true;
       scene.add(water);
-      
-      // Umgebung: Baeume
-      for(let i = 0; i < 30; i++){
+
+      // Wolken hinzufügen
+      for (let i = 0; i < 5; i++) {
+        let cloud = createCloud();
+        cloud.position.set((Math.random()-0.5)*800, 150 + Math.random()*50, (Math.random()-0.5)*800);
+        scene.add(cloud);
+      }
+
+      // Große, shootable Baeume
+      for (let i = 0; i < 20; i++) {
         let tree = createTree();
         tree.position.set((Math.random()-0.5)*800, 0, (Math.random()-0.5)*800);
         scene.add(tree);
+        shootableObjects.push(tree);
       }
-      
-      // Umgebung: Steine
-      for(let i = 0; i < 20; i++){
+
+      // Steine (nicht shootable, aber als Umgebungselemente)
+      for (let i = 0; i < 30; i++) {
         let stone = createStone();
-        stone.position.set((Math.random()-0.5)*800, 0.35, (Math.random()-0.5)*800);
+        stone.position.set((Math.random()-0.5)*800, 0.5, (Math.random()-0.5)*800);
         scene.add(stone);
+        stones.push(stone);
       }
-      
-      // Schiessbare Ziele: Rote Boxen
-      for(let i = 0; i < 10; i++){
+
+      // Shootable Targets (rote Boxen)
+      for (let i = 0; i < 10; i++) {
         let target = createTarget();
         target.position.set((Math.random()-0.5)*400, 0.5, (Math.random()-0.5)*400);
         scene.add(target);
-        shootableTargets.push(target);
+        shootableObjects.push(target);
       }
-      
-      // Spielerfigur: Gruppe mit Koerper und Kopf
+
+      // Spielerfigur: Gruppe aus Koerper und Kopf
       player = new THREE.Group();
-      
-      // Koerper (Box)
+      // Koerper
       const bodyGeo = new THREE.BoxGeometry(1, 2, 0.5);
       const bodyMat = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.position.y = 1; // berührt den Boden
+      body.position.y = 1;
       body.castShadow = true;
       player.add(body);
-      
-      // Kopf (Sphere)
+      // Kopf
       const headGeo = new THREE.SphereGeometry(0.5, 32, 32);
       const headMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
       const head = new THREE.Mesh(headGeo, headMat);
       head.position.y = 2.5;
       head.castShadow = true;
       player.add(head);
-      
       player.position.set(0, 0, 0);
       scene.add(player);
-      
-      // Kamera-Initialposition (Third-Person: hinter dem Spieler)
+
+      // Initiale Kameraposition und -ausrichtung
+      camYaw = 0;
+      camPitch = 0.2;
       updateCamera();
-      
+
       // Event Listener
       window.addEventListener('keydown', onKeyDown, false);
       window.addEventListener('keyup', onKeyUp, false);
       window.addEventListener('mousedown', onMouseDown, false);
+      window.addEventListener('mousemove', onMouseMove, false);
       window.addEventListener('resize', onWindowResize, false);
     }
-    
-    function onKeyDown(event) {
-      keys[event.code] = true;
-    }
-    
-    function onKeyUp(event) {
-      keys[event.code] = false;
-    }
-    
-    function onMouseDown(event) {
-      if(event.button === 0) { // Linke Maustaste: Schiessen
-        shootBullet();
+
+    // Erzeugt eine Wolke als Gruppe aus mehreren Kugeln
+    function createCloud() {
+      let cloud = new THREE.Group();
+      let cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+      for (let i = 0; i < 5; i++) {
+        let sphereGeo = new THREE.SphereGeometry(10, 16, 16);
+        let sphere = new THREE.Mesh(sphereGeo, cloudMat);
+        sphere.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*10, (Math.random()-0.5)*20);
+        cloud.add(sphere);
       }
+      return cloud;
     }
-    
-    function onWindowResize() {
-      camera.aspect = window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-    
-    // Erzeugt einen Baum (Stamm + Laub)
+
+    // Erzeugt einen grossen Baum (shootable)
     function createTree() {
       let tree = new THREE.Group();
-      const trunkGeo = new THREE.CylinderGeometry(0.2, 0.2, 4);
+      // Stamm
+      const trunkGeo = new THREE.CylinderGeometry(0.5, 0.5, 8);
       const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
       const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-      trunk.position.y = 2;
+      trunk.position.y = 4;
       trunk.castShadow = true;
       tree.add(trunk);
-      
-      const leavesGeo = new THREE.ConeGeometry(1.5, 4, 8);
+      // Laub
+      const leavesGeo = new THREE.ConeGeometry(4, 8, 16);
       const leavesMat = new THREE.MeshStandardMaterial({ color: 0x006400 });
       const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-      leaves.position.y = 5;
+      leaves.position.y = 10;
       leaves.castShadow = true;
       tree.add(leaves);
-      
+      // Als shootable markieren
+      tree.userData.shootable = true;
+      tree.userData.hitRadius = 5;
       return tree;
     }
-    
+
     // Erzeugt einen Stein
     function createStone() {
-      const stoneGeo = new THREE.DodecahedronGeometry(0.5);
+      const stoneGeo = new THREE.DodecahedronGeometry(1);
       const stoneMat = new THREE.MeshStandardMaterial({ color: 0x808080 });
       const stone = new THREE.Mesh(stoneGeo, stoneMat);
       stone.castShadow = true;
       return stone;
     }
-    
-    // Erzeugt ein schiessbares Ziel (rote Box)
+
+    // Erzeugt eine rote Box (shootable Target)
     function createTarget() {
       const targetGeo = new THREE.BoxGeometry(1, 1, 1);
       const targetMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
       const target = new THREE.Mesh(targetGeo, targetMat);
       target.castShadow = true;
       target.userData.shootable = true;
+      target.userData.hitRadius = 1.5;
       return target;
     }
-    
-    // Schiesst eine Kugel (zylinderfoermig)
+
+    function onKeyDown(event) {
+      keys[event.code] = true;
+    }
+    function onKeyUp(event) {
+      keys[event.code] = false;
+    }
+    function onMouseDown(event) {
+      if(event.button === 0) { // Linke Maustaste: Schiessen
+        shootBullet();
+      }
+    }
+    function onMouseMove(event) {
+      // Aktualisiere Kamerawinkel anhand der Mausbewegung
+      camYaw -= event.movementX * mouseSensitivity;
+      camPitch -= event.movementY * mouseSensitivity;
+      // Begrenze den Pitch, um ein Umdrehen zu vermeiden
+      camPitch = Math.max(-0.3, Math.min(1.0, camPitch));
+      updateCamera();
+    }
+    function onWindowResize() {
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // Aktualisiert die Kameraposition relativ zum Spieler
+    function updateCamera() {
+      // Spieler dreht sich entsprechend dem horizontalen Winkel
+      player.rotation.y = camYaw;
+      // Berechne den Kameraversatz (sphärische Koordinaten)
+      let distance = 15;
+      let offsetX = distance * Math.cos(camPitch) * Math.sin(camYaw);
+      let offsetZ = distance * Math.cos(camPitch) * Math.cos(camYaw);
+      let offsetY = distance * Math.sin(camPitch) + 2; // plus Kopfhoehe des Spielers
+      camera.position.set(player.position.x + offsetX, player.position.y + offsetY, player.position.z + offsetZ);
+      camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 2.5, player.position.z));
+    }
+
+    // Schiesst ein Geschoss (Zylinder), das sich in Richtung des Kamera-Ziels bewegt
     function shootBullet() {
+      // Nutze die Kamerarichtung, damit auch die Vertikale beruecksichtigt wird
+      let forward = new THREE.Vector3();
+      camera.getWorldDirection(forward).normalize();
       const bulletGeo = new THREE.CylinderGeometry(0.1, 0.1, 1, 8);
       const bulletMat = new THREE.MeshStandardMaterial({ color: 0xffff00 });
       const bullet = new THREE.Mesh(bulletGeo, bulletMat);
       bullet.castShadow = true;
-      // Richte den Zylinder horizontal aus
-      bullet.rotation.x = Math.PI / 2;
-      
-      // Bestimme die Vorwaertsrichtung des Spielers
-      let forward = new THREE.Vector3(0, 0, -1);
-      forward.applyQuaternion(player.quaternion).normalize();
-      
-      // Starte etwas vor dem Spieler, in Kopfhöhe
-      bullet.position.copy(player.position)
-            .add(new THREE.Vector3(0, 2, 0))
-            .add(forward.clone().multiplyScalar(1.5));
-      
-      // Setze die Geschwindigkeit der Kugel (Einheiten pro Sekunde)
-      bullet.userData.velocity = forward.multiplyScalar(20);
+      // Richte den Zylinder so aus, dass seine Y-Achse (Standardachse) in die Schussrichtung zeigt
+      bullet.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), forward);
+      // Setze die Startposition: Kopfposition des Spielers plus ein kleiner Offset in Schussrichtung
+      let startPos = new THREE.Vector3().copy(player.position).add(new THREE.Vector3(0, 2.5, 0));
+      let forwardOffset = forward.clone().multiplyScalar(2);
+      bullet.position.copy(startPos.add(forwardOffset));
+      bullet.userData.velocity = forward.clone().multiplyScalar(50);
       bullets.push(bullet);
       scene.add(bullet);
     }
-    
+
     // Erzeugt einen Explosionseffekt an einer bestimmten Position
     function createExplosion(position) {
       const explosionGeo = new THREE.SphereGeometry(0.5, 16, 16);
@@ -246,72 +294,61 @@
       explosions.push(explosion);
       scene.add(explosion);
     }
-    
-    // Aktualisiert die Kamera-Position relativ zum Spieler (Third-Person)
-    function updateCamera() {
-      // Kamera soll hinter dem Spieler sein
-      let offset = new THREE.Vector3(0, 5, 10); // etwas hoch und hinter dem Spieler
-      offset.applyQuaternion(player.quaternion);
-      camera.position.copy(player.position).add(offset);
-      // Blick leicht nach oben, damit der Kopf des Spielers sichtbar ist
-      let lookAtPos = player.position.clone().add(new THREE.Vector3(0, 2, 0));
-      camera.lookAt(lookAtPos);
-    }
-    
-    // Animationsschleife
+
     function animate() {
       requestAnimationFrame(animate);
       let now = performance.now();
       let delta = (now - lastTime) / 1000;
       lastTime = now;
-      
-      // Spielerbewegung (W/S fuer Vorwaerts/Rueckwaerts)
-      let moveVector = new THREE.Vector3();
-      if(keys["KeyW"]) { moveVector.z -= 1; }
-      if(keys["KeyS"]) { moveVector.z += 1; }
-      if(moveVector.length() > 0) {
-        moveVector.normalize();
-        moveVector.applyQuaternion(player.quaternion);
-        player.position.add(moveVector.multiplyScalar(playerSpeed * delta));
+
+      // Spielerbewegung: W/S (vorwaerts/rueckwaerts) und A/D (Seitlich, relativ zur Kamera)
+      let moveDirection = new THREE.Vector3();
+      if (keys["KeyW"]) { moveDirection.z -= 1; }
+      if (keys["KeyS"]) { moveDirection.z += 1; }
+      if (keys["KeyA"]) { moveDirection.x -= 1; }
+      if (keys["KeyD"]) { moveDirection.x += 1; }
+      if (moveDirection.length() > 0) {
+        moveDirection.normalize();
+        // Drehung um camYaw, damit die Bewegung zur Kamerarichtung passt
+        let angle = camYaw;
+        let rotatedDir = new THREE.Vector3(
+          moveDirection.x * Math.cos(angle) - moveDirection.z * Math.sin(angle),
+          0,
+          moveDirection.x * Math.sin(angle) + moveDirection.z * Math.cos(angle)
+        );
+        player.position.add(rotatedDir.multiplyScalar(playerSpeed * delta));
+        updateCamera();
       }
-      
-      // Spielerrotation (A/D)
-      if(keys["KeyA"]) { player.rotation.y += rotationSpeed * delta; }
-      if(keys["KeyD"]) { player.rotation.y -= rotationSpeed * delta; }
-      
-      // Kamera folgt dem Spieler
-      updateCamera();
-      
-      // Aktualisiere Kugeln
-      for(let i = bullets.length - 1; i >= 0; i--){
+
+      // Aktualisiere die Geschosse
+      for (let i = bullets.length - 1; i >= 0; i--) {
         let bullet = bullets[i];
         bullet.position.add(bullet.userData.velocity.clone().multiplyScalar(delta));
-        
-        // Kollisionsabfrage mit schiessbaren Zielen
-        for(let j = shootableTargets.length - 1; j >= 0; j--){
-          let target = shootableTargets[j];
-          if(bullet.position.distanceTo(target.position) < 1) {
-            createExplosion(target.position);
-            scene.remove(target);
-            shootableTargets.splice(j, 1);
+        // Kollision mit shootable Objekten (Baeume oder Boxen)
+        for (let j = shootableObjects.length - 1; j >= 0; j--) {
+          let obj = shootableObjects[j];
+          let distance = bullet.position.distanceTo(obj.position);
+          if (distance < obj.userData.hitRadius) {
+            createExplosion(obj.position);
+            scene.remove(obj);
+            shootableObjects.splice(j, 1);
             scene.remove(bullet);
             bullets.splice(i, 1);
             break;
           }
         }
-        
-        // Entferne Kugel, wenn sie zu weit fliegt
-        if(bullet.position.distanceTo(player.position) > 500) {
+        // Entferne Geschoss, wenn es zu weit vom Spieler entfernt ist
+        if (bullet.position.distanceTo(player.position) > 1000) {
           scene.remove(bullet);
           bullets.splice(i, 1);
         }
       }
-      
-      // Aktualisiere Explosionseffekte
-      for(let i = explosions.length - 1; i >= 0; i--){
+
+      // Aktualisiere Explosionen
+      for (let i = explosions.length - 1; i >= 0; i--) {
         let explosion = explosions[i];
         let elapsed = now - explosion.userData.startTime;
-        if(elapsed < explosion.userData.duration) {
+        if (elapsed < explosion.userData.duration) {
           let scale = 1 + (elapsed / explosion.userData.duration) * 3;
           explosion.scale.set(scale, scale, scale);
           explosion.material.opacity = 1 - (elapsed / explosion.userData.duration);
@@ -320,7 +357,7 @@
           explosions.splice(i, 1);
         }
       }
-      
+
       renderer.render(scene, camera);
     }
   </script>
