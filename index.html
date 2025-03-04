@@ -9,7 +9,6 @@
   <title>3D-Chemiker</title>
   <style>
     body { margin: 0; overflow: hidden; }
-
     /* Punktestand und Leben */
     #punkte, #leben {
       position: absolute;
@@ -20,7 +19,6 @@
     }
     #punkte { top: 10px; }
     #leben { top: 30px; }
-
     /* Overlay fuer Einleitung */
     #introOverlay {
       display: flex;
@@ -50,7 +48,6 @@
       padding: 10px 20px;
       cursor: pointer;
     }
-
     /* Overlay fuer Einladung ab Score 28 */
     #message {
       position: absolute;
@@ -67,7 +64,6 @@
       display: none;
       z-index: 10;
     }
-
     /* Overlay fuer Game Over */
     #gameOver {
       display: none;
@@ -95,26 +91,22 @@
   <!-- Punktestand und Leben -->
   <div id="punkte">Punkte: 0</div>
   <div id="leben">Leben: 3</div>
-
   <!-- Einleitungs-Overlay -->
   <div id="introOverlay">
     <h1>Willkommen zum 3D-Chemiker!</h1>
     <p>Du bist ein Chemiestudent, der eine Physik-phobie entwickelt hat. Weiche den Pendeln aus und sammle die grünen Atome, um 28 Punkte zu erreichen.</p>
     <button id="startBtn">Spiel starten</button>
   </div>
-
   <!-- Einladung ab Score 28 -->
   <div id="message">
-    <h1>Herzlichen Glückwunsch, Joel, zum 28. Geburtstag!</h1>
+    <h1>Herzlichen Glueckwunsch, Joel, zum 28. Geburtstag!</h1>
     <p>Einladung zum All You Can Eat Fondue Chinoise!</p>
   </div>
-
   <!-- Game Over Overlay -->
   <div id="gameOver">
     <h1>Game Over!</h1>
     <button id="restartBtn">Neu starten</button>
   </div>
-
   <script>
     // === Konfigurierbare Parameter ===
     const SPEED_MULTIPLIER       = 50.0;
@@ -128,17 +120,14 @@
     const COLLECTIBLE_SPAWN_PROB = 0.05;
     const TREE_SPAWN_PROB        = 0.3;
     const STONE_SPAWN_PROB       = 0.3;
-
     // === Basisgeschwindigkeiten ===
     const basePlayerSpeed      = 0.22;
     const baseObstacleSpeed    = 0.21;
     const baseCollectibleSpeed = 0.21;
     const baseEnvSpeed         = 0.21;  // Geschwindigkeit fuer Baeume und Steine
     const cloudSpeed           = 0; // Wolkengeschwindigkeit
-
     // Zu Beginn ist das Spiel noch nicht aktiv
     let gameActive = false;
-
     // === Szene, Kamera und Renderer ===
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
@@ -149,83 +138,70 @@
     );
     camera.position.set(0, 7, 12);
     camera.lookAt(0, 0, 0);
-
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputEncoding = THREE.sRGBEncoding;
     document.body.appendChild(renderer.domElement);
-
     // === Boden: Zwei Bereiche ===
     const outerGroundGeometry = new THREE.PlaneGeometry(100, 100);
     const outerGroundMaterial = new THREE.MeshPhongMaterial({ color: 0x006400 });
     const outerGround = new THREE.Mesh(outerGroundGeometry, outerGroundMaterial);
     outerGround.rotation.x = -Math.PI / 2;
     scene.add(outerGround);
-
     const trackGeometry = new THREE.PlaneGeometry(10, 100);
     const trackMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
     const track = new THREE.Mesh(trackGeometry, trackMaterial);
     track.rotation.x = -Math.PI / 2;
     track.position.y = 0.01;
     scene.add(track);
-
     // === Beleuchtung ===
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
-
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(0, 10, 10);
     scene.add(directionalLight);
-
     // === Hintergrund (Himmel) ===
     scene.background = new THREE.Color(0x87CEEB);
-
     // === Wolken-Logik ===
     const clouds = [];
-    const MAX_CLOUDS = 15;
-    
+    const MAX_CLOUDS = 30; // Maximale Anzahl der Wolken auf 30 erhöht
     function createCloud(x, y, z) {
       const cloud = new THREE.Group();
       const cloudGeo = new THREE.SphereGeometry(1, 16, 16);
       const cloudMat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
-  
       const part1 = new THREE.Mesh(cloudGeo, cloudMat);
       const part2 = new THREE.Mesh(cloudGeo, cloudMat);
       const part3 = new THREE.Mesh(cloudGeo, cloudMat);
-      
       part1.position.set(0, 0, 0);
       part2.position.set(1, 0.2, 0);
       part3.position.set(-1, 0.2, 0);
-      
       cloud.add(part1);
       cloud.add(part2);
       cloud.add(part3);
-  
       cloud.scale.set(2, 2, 2);
       cloud.position.set(x, y, z);
       scene.add(cloud);
       clouds.push(cloud);
     }
-    
-    createCloud(-20, 5, -40);
-    createCloud(0, 10, -50);
-    createCloud(20, 7, -45);
-    
+    // Initiale Wolken
+    createCloud(-20, 15, -40);
+    createCloud(0, 15, -50);
+    createCloud(20, 15, -45);
     function spawnCloud() {
       if (clouds.length < MAX_CLOUDS) {
-        let x = Math.random() * 80 - 40;
-        let y = Math.random() * 10 + 10;
+        // x: breiter zufaelliger Bereich (mehr Links und Rechts)
+        let x = Math.random() * 100 - 50;
+        // y: feste Hoehe, damit nur horizontal variiert wird
+        let y = 15;
         let z = player.position.z - 70;
         createCloud(x, y, z);
       }
     }
-    
     setInterval(() => {
       if (Math.random() < 0.6) {
         spawnCloud();
       }
     }, 750);
-
     // === Spieler (Gruppe aus Kopf und Koerper) ===
     const player = new THREE.Group();
     const headGeometry = new THREE.SphereGeometry(0.5, 32, 32);
@@ -233,16 +209,13 @@
     const head = new THREE.Mesh(headGeometry, headMaterial);
     head.position.y = 1.5;
     player.add(head);
-
     const bodyGeometry = new THREE.BoxGeometry(1, 1, 0.5);
     const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     body.position.y = 0.75;
     player.add(body);
-
     player.position.set(0, 0, 0);
     scene.add(player);
-
     // === Spielersteuerung ===
     let leftPressed = false;
     let rightPressed = false;
@@ -254,16 +227,13 @@
       if (e.key === 'ArrowLeft') leftPressed = false;
       if (e.key === 'ArrowRight') rightPressed = false;
     });
-
     // === Arrays fuer Objekte ===
     let obstacles = [];
     let collectibles = [];
     let trees = [];
     let stones = [];
-
     // === GLTFLoader ===
     const loader = new THREE.GLTFLoader();
-
     let obstacleModel = null;
     loader.load(
       'models/scene.gltf',
@@ -277,7 +247,6 @@
         console.error('Fehler beim Laden des Hindernis-Modells:', error);
       }
     );
-
     // === Hindernisse spawnen ===
     function spawnObstacle() {
       if (!gameActive) return;
@@ -295,7 +264,6 @@
         obstacles.push(obstacle);
       }
     }
-
     // === Sammelobjekte spawnen ===
     function spawnCollectible() {
       if (!gameActive) return;
@@ -309,7 +277,6 @@
         collectibles.push(collectible);
       }
     }
-
     // === Baeume spawnen ===
     function spawnTree() {
       if (!gameActive) return;
@@ -320,15 +287,12 @@
         const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
         trunk.position.y = 1.0;
         tree.add(trunk);
-
         const foliageGeometry = new THREE.ConeGeometry(1, 3, 8);
         const foliageMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
         const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
         foliage.position.y = 2.5;
         tree.add(foliage);
         tree.scale.set(1.5, 1.5, 1.5);
-
-
         let side = Math.random() < 0.5 ? -1 : 1;
         let xMin = 5, xMax = 70;
         let xPos = side * (xMin + Math.random() * (xMax - xMin));
@@ -338,7 +302,6 @@
         trees.push(tree);
       }
     }
-
     // === Steine spawnen ===
     function spawnStone() {
       if (!gameActive) return;
@@ -355,7 +318,6 @@
         stones.push(stone);
       }
     }
-
     // === Punkte, Leben und Overlay-Elemente ===
     let punkte = 0;
     let leben = 3;
@@ -364,15 +326,12 @@
     const messageElement = document.getElementById('message');
     const gameOverElement = document.getElementById('gameOver');
     const restartBtn = document.getElementById('restartBtn');
-
     const introOverlay = document.getElementById('introOverlay');
     const startBtn = document.getElementById('startBtn');
-
     startBtn.addEventListener('click', () => {
       introOverlay.style.display = 'none';
       gameActive = true;
     });
-
     // === Spiel zuruecksetzen ===
     function resetGame() {
       punkte = 0;
@@ -381,7 +340,6 @@
       lebenElement.textContent = `Leben: ${leben}`;
       player.position.set(0, 0, 0);
       camera.position.set(0, 7, 12);
-
       obstacles.forEach(obs => scene.remove(obs));
       collectibles.forEach(col => scene.remove(col));
       trees.forEach(tree => scene.remove(tree));
@@ -390,29 +348,21 @@
       collectibles = [];
       trees = [];
       stones = [];
-
       gameOverElement.style.display = 'none';
       messageElement.style.display = 'none';
-
       gameActive = true;
     }
     restartBtn.addEventListener('click', resetGame);
-
     // === Animations-Loop mit Delta Time ===
     let lastTime = performance.now();
     function animate(time) {
-      // Berechne die vergangene Zeit in Sekunden seit dem letzten Frame
       const delta = (time - lastTime) / 1000;
       lastTime = time;
-
       requestAnimationFrame(animate);
-
-      // Falls das Spiel nicht aktiv ist, nur rendern
       if (!gameActive) {
         renderer.render(scene, camera);
         return;
       }
-
       // Spielerbewegung
       player.position.z -= basePlayerSpeed * SPEED_MULTIPLIER * delta;
       if (leftPressed && player.position.x > -5) {
@@ -421,22 +371,18 @@
       if (rightPressed && player.position.x < 5) {
         player.position.x += basePlayerSpeed * SPEED_MULTIPLIER * delta;
       }
-
       // Kamera anpassen
       camera.position.set(player.position.x, 7, player.position.z + 5);
       camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
       camera.rotation.x = -Math.PI / 6;
-
       // Bodenbereiche aktualisieren
       outerGround.position.z = player.position.z;
       track.position.z = player.position.z;
-
       // Objekte spawnen
       if (Math.random() < OBSTACLE_SPAWN_PROB) spawnObstacle();
       if (Math.random() < COLLECTIBLE_SPAWN_PROB) spawnCollectible();
       if (Math.random() < TREE_SPAWN_PROB) spawnTree();
       if (Math.random() < STONE_SPAWN_PROB) spawnStone();
-
       // Hindernisse bewegen und Kollision pruefen
       obstacles.forEach((obs, index) => {
         obs.position.z += baseObstacleSpeed * SPEED_MULTIPLIER * delta;
@@ -456,7 +402,6 @@
           }
         }
       });
-
       // Sammelobjekte bewegen und Kollision pruefen
       collectibles.forEach((col, index) => {
         col.position.z += baseCollectibleSpeed * SPEED_MULTIPLIER * delta;
@@ -472,7 +417,6 @@
           collectibles.splice(index, 1);
         }
       });
-
       // Baeume und Steine bewegen
       trees.forEach((tree, index) => {
         tree.position.z += baseEnvSpeed * SPEED_MULTIPLIER * delta;
@@ -488,21 +432,14 @@
           stones.splice(index, 1);
         }
       });
-
-      // Wolken bewegen (hier mit Delta Time, falls cloudSpeed angepasst wird)
-      clouds.forEach(cloud => {
-        cloud.position.x += cloudSpeed * delta;
-        if (cloud.position.x > 50) {
-          cloud.position.x = -50;
+      // Wolken bewegen (falls gewünscht, hier nur horizontale Bewegung, z bleibt konstant)
+      clouds.forEach((cloud, index) => {
+        // Hier bleibt cloud.position.z konstant; stattdessen wird geprüft, ob die Wolke hinter dem Spieler liegt.
+        if (cloud.position.z > player.position.z + 10) {
+          scene.remove(cloud);
+          clouds.splice(index, 1);
         }
       });
-
-      // Ab Score 28: Einladung anzeigen und Spiel pausieren
-      if (punkte >= 28) {
-        gameActive = false;
-        messageElement.style.display = 'block';
-      }
-
       renderer.render(scene, camera);
     }
     requestAnimationFrame(animate);
