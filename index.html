@@ -37,7 +37,8 @@
     W - vorwaerts, S - rueckwaerts,<br>
     A - links, D - rechts,<br>
     Maus bewegen = Zielen,<br>
-    Linke Maustaste: Schiessen.
+    Linke Maustaste: Schiessen,<br>
+    Mausradklick: Perspektivenwechsel.
   </div>
   <div id="crosshair"></div>
   
@@ -58,6 +59,7 @@
     let camYaw = 0;
     let camPitch = 0.2; // in Radianten (~11.5°)
     let mouseSensitivity = 0.002;
+    let isFirstPerson = false; // false = Third-Person, true = First-Person
 
     init();
     animate();
@@ -121,7 +123,7 @@
         shootableObjects.push(tree);
       }
 
-      // Steine (nicht shootable, aber als Umgebungselemente)
+      // Zusätzliche Steine
       for (let i = 0; i < 30; i++) {
         let stone = createStone();
         stone.position.set((Math.random()-0.5)*800, 0.5, (Math.random()-0.5)*800);
@@ -232,15 +234,18 @@
       keys[event.code] = false;
     }
     function onMouseDown(event) {
-      if(event.button === 0) { // Linke Maustaste: Schiessen
+      if (event.button === 0) { // Linke Maustaste: Schiessen
         shootBullet();
+      } else if (event.button === 1) { // Mausradklick: Perspektivenwechsel
+        isFirstPerson = !isFirstPerson;
+        updateCamera();
       }
     }
     function onMouseMove(event) {
-      // Aktualisiere Kamerawinkel anhand der Mausbewegung
-      camYaw -= event.movementX * mouseSensitivity;
+      // Nicht invertierte Maussteuerung: Y bleibt wie gehabt, X wird addiert
+      camYaw += event.movementX * mouseSensitivity;
       camPitch -= event.movementY * mouseSensitivity;
-      // Begrenze den Pitch, um ein Umdrehen zu vermeiden
+      // Begrenze den Pitch, um extremes Hoch- oder Runterblicken zu vermeiden
       camPitch = Math.max(-0.3, Math.min(1.0, camPitch));
       updateCamera();
     }
@@ -252,15 +257,22 @@
 
     // Aktualisiert die Kameraposition relativ zum Spieler
     function updateCamera() {
-      // Spieler dreht sich entsprechend dem horizontalen Winkel
+      // Spieler dreht sich entsprechend der horizontalen Mausbewegung
       player.rotation.y = camYaw;
-      // Berechne den Kameraversatz (sphärische Koordinaten)
-      let distance = 15;
-      let offsetX = distance * Math.cos(camPitch) * Math.sin(camYaw);
-      let offsetZ = distance * Math.cos(camPitch) * Math.cos(camYaw);
-      let offsetY = distance * Math.sin(camPitch) + 2; // plus Kopfhoehe des Spielers
-      camera.position.set(player.position.x + offsetX, player.position.y + offsetY, player.position.z + offsetZ);
-      camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 2.5, player.position.z));
+      if (isFirstPerson) {
+        // First-Person: Kamera auf Kopfposition, Blick in Spieler-Richtung
+        camera.position.copy(player.position).add(new THREE.Vector3(0, 2.5, 0));
+        let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
+        camera.lookAt(camera.position.clone().add(forward));
+      } else {
+        // Third-Person: Kamera hinter dem Spieler (näherer Abstand)
+        let distance = 10;
+        let offsetX = distance * Math.cos(camPitch) * Math.sin(camYaw);
+        let offsetZ = distance * Math.cos(camPitch) * Math.cos(camYaw);
+        let offsetY = distance * Math.sin(camPitch) + 2;
+        camera.position.set(player.position.x + offsetX, player.position.y + offsetY, player.position.z + offsetZ);
+        camera.lookAt(new THREE.Vector3(player.position.x, player.position.y + 2.5, player.position.z));
+      }
     }
 
     // Schiesst ein Geschoss (Zylinder), das sich in Richtung des Kamera-Ziels bewegt
@@ -268,13 +280,14 @@
       // Nutze die Kamerarichtung, damit auch die Vertikale beruecksichtigt wird
       let forward = new THREE.Vector3();
       camera.getWorldDirection(forward).normalize();
-      const bulletGeo = new THREE.CylinderGeometry(0.1, 0.1, 1, 8);
-      const bulletMat = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+      // Erzeuge einen schwarzen Zylinder (etwas groesser)
+      const bulletGeo = new THREE.CylinderGeometry(0.15, 0.15, 1, 8);
+      const bulletMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
       const bullet = new THREE.Mesh(bulletGeo, bulletMat);
       bullet.castShadow = true;
-      // Richte den Zylinder so aus, dass seine Y-Achse (Standardachse) in die Schussrichtung zeigt
+      // Richte den Zylinder so aus, dass seine Kreisfläche in die Abschussrichtung zeigt
       bullet.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), forward);
-      // Setze die Startposition: Kopfposition des Spielers plus ein kleiner Offset in Schussrichtung
+      // Setze Startposition: Spieler-Kopf plus einen kleinen Offset in Blickrichtung
       let startPos = new THREE.Vector3().copy(player.position).add(new THREE.Vector3(0, 2.5, 0));
       let forwardOffset = forward.clone().multiplyScalar(2);
       bullet.position.copy(startPos.add(forwardOffset));
@@ -301,30 +314,32 @@
       let delta = (now - lastTime) / 1000;
       lastTime = now;
 
-      // Spielerbewegung: W/S (vorwaerts/rueckwaerts) und A/D (Seitlich, relativ zur Kamera)
-      let moveDirection = new THREE.Vector3();
-      if (keys["KeyW"]) { moveDirection.z -= 1; }
-      if (keys["KeyS"]) { moveDirection.z += 1; }
-      if (keys["KeyA"]) { moveDirection.x -= 1; }
-      if (keys["KeyD"]) { moveDirection.x += 1; }
-      if (moveDirection.length() > 0) {
-        moveDirection.normalize();
-        // Drehung um camYaw, damit die Bewegung zur Kamerarichtung passt
-        let angle = camYaw;
-        let rotatedDir = new THREE.Vector3(
-          moveDirection.x * Math.cos(angle) - moveDirection.z * Math.sin(angle),
-          0,
-          moveDirection.x * Math.sin(angle) + moveDirection.z * Math.cos(angle)
-        );
-        player.position.add(rotatedDir.multiplyScalar(playerSpeed * delta));
-        updateCamera();
+      // Spielerbewegung: W/S vorwaerts/rueckwaerts, A/D seitlich – relativ zur Spielerorientierung
+      if (keys["KeyW"]) {
+        let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
+        player.position.add(forward.multiplyScalar(playerSpeed * delta));
       }
+      if (keys["KeyS"]) {
+        let backward = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion);
+        player.position.add(backward.multiplyScalar(playerSpeed * delta));
+      }
+      if (keys["KeyA"]) {
+        let left = new THREE.Vector3(-1, 0, 0).applyQuaternion(player.quaternion);
+        player.position.add(left.multiplyScalar(playerSpeed * delta));
+      }
+      if (keys["KeyD"]) {
+        let right = new THREE.Vector3(1, 0, 0).applyQuaternion(player.quaternion);
+        player.position.add(right.multiplyScalar(playerSpeed * delta));
+      }
+      
+      // Aktualisiere Kamera (falls sich Spielerposition ändert)
+      updateCamera();
 
-      // Aktualisiere die Geschosse
+      // Aktualisiere Geschosse
       for (let i = bullets.length - 1; i >= 0; i--) {
         let bullet = bullets[i];
         bullet.position.add(bullet.userData.velocity.clone().multiplyScalar(delta));
-        // Kollision mit shootable Objekten (Baeume oder Boxen)
+        // Kollisionsabfrage mit shootable Objekten (Baeume oder Boxen)
         for (let j = shootableObjects.length - 1; j >= 0; j--) {
           let obj = shootableObjects[j];
           let distance = bullet.position.distanceTo(obj.position);
@@ -337,14 +352,14 @@
             break;
           }
         }
-        // Entferne Geschoss, wenn es zu weit vom Spieler entfernt ist
+        // Entferne Geschoss, wenn es zu weit fliegt
         if (bullet.position.distanceTo(player.position) > 1000) {
           scene.remove(bullet);
           bullets.splice(i, 1);
         }
       }
 
-      // Aktualisiere Explosionen
+      // Aktualisiere Explosionseffekte
       for (let i = explosions.length - 1; i >= 0; i--) {
         let explosion = explosions[i];
         let elapsed = now - explosion.userData.startTime;
