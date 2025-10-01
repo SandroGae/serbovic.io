@@ -64,8 +64,8 @@
     const MAX_COLLECTIBLES = 20;
     const MAX_TREES = 200;
     const MAX_STONES = 80;
-    const MAX_CLOUDS = 15;
-
+    const MAX_CLOUDS_BASE = 12;
+    let elapsedSeconds = 0;
     const obstacleRatePerSec = 7.2;
     const collectibleRatePerSec = 3.0;
     const treeRatePerSec = 18.0;
@@ -297,6 +297,7 @@
 
     function animate(time) {
       const delta = (time - lastTime) / 1000;
+      elapsedSeconds += delta;
       lastTime = time;
       requestAnimationFrame(animate);
 
@@ -310,7 +311,7 @@
         player.position.x += basePlayerSpeed * SPEED_MULTIPLIER * delta;
       }
 
-      camera.position.set(player.position.x, 7, player.position.z + 5);
+      camera.position.set(player.position.x, 7, player.position.z + 6.5);
       camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
       camera.rotation.x = -Math.PI / 6;
 
@@ -322,7 +323,8 @@
       if (chancePerSecond(collectibleRatePerSec, delta)) spawnCollectible();
       if (chancePerSecond(treeRatePerSec, delta)) spawnTree();
       if (chancePerSecond(stoneRatePerSec, delta)) spawnStone();
-      if (clouds.length < MAX_CLOUDS && chancePerSecond(cloudRatePerSec, delta)) {
+      const dynamicMaxClouds = Math.min(80, MAX_CLOUDS_BASE + Math.floor(elapsedSeconds / 8) * 2);
+      if (clouds.length < dynamicMaxClouds && chancePerSecond(cloudRatePerSec, delta)) {
         const x = Math.random() * 80 - 40;
         const y = Math.random() * 10 + 10;
         const z = player.position.z - 70;
