@@ -312,6 +312,8 @@
 
       camera.position.set(player.position.x, 7, player.position.z + 5);
       camera.lookAt(new THREE.Vector3(player.position.x, 0, player.position.z));
+      camera.rotation.x = -Math.PI / 6;
+
 
       outerGround.position.z = player.position.z;
       track.position.z = player.position.z;
